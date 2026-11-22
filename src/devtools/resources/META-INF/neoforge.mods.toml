@@ -1,0 +1,20 @@
+modLoader="javafml"
+loaderVersion="[1,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="fudevtools"
+version="0.0.0-dev"
+displayName="Fantasy Undergrounds Dev Tools"
+description='''
+Development-only worldgen audit tooling for Fantasy Undergrounds (ore audit, performance,
+determinism hashes, structure probes, registration dump). Inactive unless fu-audit.properties
+exists in the server directory. Never shipped.
+'''
+
+[[dependencies.fudevtools]]
+    modId="neoforge"
+    type="required"
+    versionRange="[26.2,)"
+    ordering="NONE"
+    side="BOTH"
