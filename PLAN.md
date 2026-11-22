@@ -151,7 +151,7 @@ All FU features stay inside the 3×3 chunk write area the generator allows, and 
 ## 5. Main risks
 
 1. **Ore gate (±15%)** is the hardest constraint. Removing vanilla caves and adding huge chambers changes air exposure. Mitigation: air budget near vanilla per Y band, measured by the audit each phase.
-2. **Determinism gate** may fail **in vanilla itself**: decoration overlapping neighbouring chunks depends on generation order. The vanilla baseline run measures this first. If vanilla is nondeterministic, the gate becomes "no mismatches beyond vanilla's own", and I will flag that conflict to you rather than hide it.
+2. **Determinism gate: confirmed conflict.** Vanilla 26.2 finished chunks are *not* reproducible between fresh worlds, even with a single worldgen thread (455/1,024 chunks differ, all in decoration). Terrain before features *is* exactly reproducible. Gate 5 as written cannot be passed by vanilla or by any mod. A replacement (5a/5b/5c) is proposed in `BASELINES.md` and awaits approval.
 3. **Terrain mod composition** (Tectonic/Terralith) is untested and may land in fallback mode.
 4. **Hostile mob density** in huge dark caverns. The audit measures a dark-spawnable-floor proxy every phase. Real mob counts need a player present and will be measured in-game in Phase 1.
 5. **Machine limits:** 7.3 GB RAM and an 8-thread Ryzen 5 7520U. Perf numbers are relative (vanilla vs FU on the same machine). The 2,000 × 2,000 pre-generation gate takes a long time here.
@@ -171,7 +171,7 @@ How it measures:
 * **Gate 2:** a histogram of every block in every scanned chunk; `c:ores` subset; ±15% per ore with ≥ 50 baseline blocks (rarer ores reported, not gated).
 * **Gate 3:** wall-clock ms per chunk, vanilla vs FU.
 * **Gate 4:** `-RadiusChunks 63 -NoScan` → 126×126 chunks = 2,016 × 2,016 blocks; the log is checked for far-chunk warnings and new exception signatures versus the vanilla log.
-* **Gate 5:** FNV-1a 64-bit hash of every block state per chunk; two fresh worlds compared.
+* **Gate 5:** FNV-1a 64-bit hash of every block state per chunk and per 16-block section (finished chunks), plus a separate 16×16-chunk region generated only to the `carvers` status (terrain without decoration). Two fresh worlds are compared. `-SingleThread` runs worldgen on one worker thread.
 * **Gate 6:** locate ancient city, trial chambers, stronghold and mineshaft from the region centre; generate their chunks; count non-air, non-fluid, non-base-stone blocks inside their piece boxes; compare against vanilla (≥ 95% required).
 * **Gate 7:** every biome's post-modifier carver list and per-step feature lists, plus the placed-feature registry. Every baseline entry must survive in order (additions allowed; carver removal reported as by-design).
 * **Metrics:** % air below y = 0, water/lava source counts below 0, scheduled fluid and block ticks after generation, and a dark-spawnable-floor count (2-high air over a zombie-valid floor with block and sky light 0, y ≤ 40).

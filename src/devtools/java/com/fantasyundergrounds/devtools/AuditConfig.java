@@ -14,6 +14,8 @@ import java.util.Properties;
  * @param structures  run the structure probe (gate 6)
  * @param structureSearchRadius search radius for /locate-equivalent, in chunks
  * @param registryDump write the biome feature/carver dump (gate 7)
+ * @param terrainHashRadius half-size in chunks of a separate region generated only up to the
+ *                    carver stage (terrain without decoration) and hashed for gate 5a; 0 = off
  */
 public record AuditConfig(
     String label,
@@ -24,7 +26,8 @@ public record AuditConfig(
     boolean scan,
     boolean structures,
     int structureSearchRadius,
-    boolean registryDump
+    boolean registryDump,
+    int terrainHashRadius
 ) {
     static AuditConfig from(Properties p) {
         return new AuditConfig(
@@ -36,7 +39,8 @@ public record AuditConfig(
             Boolean.parseBoolean(p.getProperty("scan", "true")),
             Boolean.parseBoolean(p.getProperty("structures", "true")),
             Integer.parseInt(p.getProperty("structureSearchRadius", "100")),
-            Boolean.parseBoolean(p.getProperty("registryDump", "true"))
+            Boolean.parseBoolean(p.getProperty("registryDump", "true")),
+            Integer.parseInt(p.getProperty("terrainHashRadius", "8"))
         );
     }
 }

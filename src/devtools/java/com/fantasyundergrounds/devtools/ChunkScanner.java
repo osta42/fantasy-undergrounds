@@ -24,6 +24,8 @@ final class ChunkScanner {
 
     final Reference2LongOpenHashMap<Block> histogram = new Reference2LongOpenHashMap<>();
     final Map<String, String> chunkHashes = new TreeMap<>();
+    /** Per-section hashes (bottom section first) to localise non-determinism by height. */
+    final Map<String, java.util.List<String>> sectionHashes = new TreeMap<>();
     long chunks;
     long airBelowZero;
     long blocksBelowZero;
@@ -36,6 +38,7 @@ final class ChunkScanner {
     void scan(ServerLevel level, LevelChunk chunk) {
         this.chunks++;
         long h = 0xcbf29ce484222325L; // FNV-1a 64
+        java.util.List<String> secHashes = new java.util.ArrayList<>();
         LevelChunkSection[] sections = chunk.getSections();
         for (int si = 0; si < sections.length; si++) {
             LevelChunkSection section = sections[si];
@@ -44,6 +47,7 @@ final class ChunkScanner {
             if (section.hasOnlyAir()) {
                 // Hash an all-air section by a fixed marker so the hash stays position-aware.
                 h = (h ^ (0x41524CL + si)) * 0x100000001b3L;
+                secHashes.add("air");
                 this.histogram.addTo(net.minecraft.world.level.block.Blocks.AIR, 4096);
                 if (belowZeroSection) {
                     this.airBelowZero += 4096;
@@ -51,12 +55,15 @@ final class ChunkScanner {
                 }
                 continue;
             }
+            long sh = 0xcbf29ce484222325L;
             for (int y = 0; y < 16; y++) {
                 boolean below0 = baseY + y < 0;
                 for (int z = 0; z < 16; z++) {
                     for (int x = 0; x < 16; x++) {
                         BlockState state = section.getBlockState(x, y, z);
-                        h = (h ^ Block.getId(state)) * 0x100000001b3L;
+                        int id = Block.getId(state);
+                        h = (h ^ id) * 0x100000001b3L;
+                        sh = (sh ^ id) * 0x100000001b3L;
                         this.histogram.addTo(state.getBlock(), 1);
                         if (below0) {
                             this.blocksBelowZero++;
@@ -73,8 +80,11 @@ final class ChunkScanner {
                     }
                 }
             }
+            secHashes.add(Long.toHexString(sh));
         }
-        this.chunkHashes.put(chunk.getPos().x() + "," + chunk.getPos().z(), Long.toHexString(h));
+        String key = chunk.getPos().x() + "," + chunk.getPos().z();
+        this.chunkHashes.put(key, Long.toHexString(h));
+        this.sectionHashes.put(key, secHashes);
         this.scheduledFluidTicks += chunk.getFluidTicks().count();
         this.scheduledBlockTicks += chunk.getBlockTicks().count();
         this.darkSpawnableFloor += countDarkSpawnable(level, chunk);
@@ -110,6 +120,27 @@ final class ChunkScanner {
             }
         }
         return count;
+    }
+
+    /** Whole-chunk block-state hash of any chunk, e.g. a ProtoChunk stopped after the carver stage. */
+    static String hash(net.minecraft.world.level.chunk.ChunkAccess chunk) {
+        long h = 0xcbf29ce484222325L;
+        LevelChunkSection[] sections = chunk.getSections();
+        for (int si = 0; si < sections.length; si++) {
+            LevelChunkSection section = sections[si];
+            if (section.hasOnlyAir()) {
+                h = (h ^ (0x41524CL + si)) * 0x100000001b3L;
+                continue;
+            }
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        h = (h ^ Block.getId(section.getBlockState(x, y, z))) * 0x100000001b3L;
+                    }
+                }
+            }
+        }
+        return Long.toHexString(h);
     }
 
     Map<String, Long> histogramById() {

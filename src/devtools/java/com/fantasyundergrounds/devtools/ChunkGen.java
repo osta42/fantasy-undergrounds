@@ -11,8 +11,8 @@ import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 /**
- * Generates a rectangle of chunks to FULL in one parallel batch, blocking the server thread
- * until every chunk is done. Because the server thread does not tick while we block, no
+ * Generates a rectangle of chunks to a target status in one parallel batch, blocking the server
+ * thread until every chunk is done. Because the server thread does not tick while we block, no
  * scheduled fluid/block ticks run and no tickets expire between generation and scanning, so
  * the scanned state is exactly what world generation produced.
  *
@@ -35,15 +35,21 @@ final class ChunkGen {
 
     private ChunkGen() {}
 
-    /** @return wall-clock nanoseconds spent generating; throws if any chunk failed. */
-    @SuppressWarnings("unchecked")
+    record Result(long nanos, List<ChunkAccess> chunks) {}
+
+    /** @return wall-clock nanoseconds spent generating to FULL; throws if any chunk failed. */
     static long generate(ServerChunkCache cache, int minX, int minZ, int maxXExcl, int maxZExcl) {
+        return generate(cache, minX, minZ, maxXExcl, maxZExcl, ChunkStatus.FULL).nanos();
+    }
+
+    @SuppressWarnings("unchecked")
+    static Result generate(ServerChunkCache cache, int minX, int minZ, int maxXExcl, int maxZExcl, ChunkStatus status) {
         long t0 = System.nanoTime();
         List<CompletableFuture<ChunkResult<ChunkAccess>>> futures = new ArrayList<>();
         try {
             for (int x = minX; x < maxXExcl; x++) {
                 for (int z = minZ; z < maxZExcl; z++) {
-                    futures.add((CompletableFuture<ChunkResult<ChunkAccess>>) GET_FUTURE_MAIN.invoke(cache, x, z, ChunkStatus.FULL, true));
+                    futures.add((CompletableFuture<ChunkResult<ChunkAccess>>) GET_FUTURE_MAIN.invoke(cache, x, z, status, true));
                 }
             }
         } catch (ReflectiveOperationException e) {
@@ -56,12 +62,14 @@ final class ChunkGen {
             }
         }
         long dt = System.nanoTime() - t0;
+        List<ChunkAccess> chunks = new ArrayList<>(futures.size());
         for (CompletableFuture<ChunkResult<ChunkAccess>> f : futures) {
             ChunkResult<ChunkAccess> r = f.join();
-            if (r.isSuccess() == false) {
+            if (!r.isSuccess()) {
                 throw new IllegalStateException("chunk generation failed: " + r.getError());
             }
+            chunks.add(r.orElse(null));
         }
-        return dt;
+        return new Result(dt, chunks);
     }
 }

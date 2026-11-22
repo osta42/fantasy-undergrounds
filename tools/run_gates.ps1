@@ -19,14 +19,14 @@ $audit = Join-Path $PSScriptRoot 'run_audit.ps1'
 
 $jobs = @()
 if (-not $SkipVanilla) {
-    $jobs += , @('vanilla', 'vanilla-a', @())
-    $jobs += , @('vanilla', 'vanilla-b', @('-NoStructures', '-NoRegistryDump'))
+    $jobs += , @('vanilla', 'vanilla-a', @{})
+    $jobs += , @('vanilla', 'vanilla-b', @{NoStructures = $true; NoRegistryDump = $true})
 }
-$jobs += , @('modded', "$Tag-modded-a", @())
-$jobs += , @('modded', "$Tag-modded-b", @('-NoStructures', '-NoRegistryDump'))
+$jobs += , @('modded', "$Tag-modded-a", @{})
+$jobs += , @('modded', "$Tag-modded-b", @{NoStructures = $true; NoRegistryDump = $true})
 if (-not $SkipPregen) {
-    if (-not $SkipVanilla) { $jobs += , @('vanilla', 'pregen-vanilla', @('-RadiusChunks', '63', '-NoScan', '-NoStructures', '-NoRegistryDump')) }
-    $jobs += , @('modded', "$Tag-pregen-modded", @('-RadiusChunks', '63', '-NoScan', '-NoStructures', '-NoRegistryDump'))
+    if (-not $SkipVanilla) { $jobs += , @('vanilla', 'pregen-vanilla', @{RadiusChunks = 63; NoScan = $true; NoStructures = $true; NoRegistryDump = $true}) }
+    $jobs += , @('modded', "$Tag-pregen-modded", @{RadiusChunks = 63; NoScan = $true; NoStructures = $true; NoRegistryDump = $true})
 }
 
 foreach ($j in $jobs) {
@@ -41,9 +41,9 @@ $reports = Join-Path $root 'reports'
 New-Item -ItemType Directory -Force $reports | Out-Null
 
 Write-Output "=== vanilla self-determinism"
-python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$v\vanilla-b.json" --candidate2 "$v\vanilla-b.json" --md "$reports\vanilla-self.md" | Out-Null
+python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$v\vanilla-a.json" --candidate2 "$v\vanilla-b.json" --md "$reports\vanilla-self.md" | Out-Null
 Write-Output "=== $Tag main comparison"
-python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$m\$Tag-modded-a.json" --candidate2 "$m\$Tag-modded-b.json" --md "$reports\$Tag.md"
+python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$m\$Tag-modded-a.json" --candidate2 "$m\$Tag-modded-b.json" --baseline2 "$v\vanilla-b.json" --md "$reports\$Tag.md"
 if (-not $SkipPregen) {
     Write-Output "=== $Tag pre-generation comparison"
     python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\pregen-vanilla.json" "$m\$Tag-pregen-modded.json" --md "$reports\$Tag-pregen.md"

@@ -100,6 +100,8 @@ neoForge {
             server()
             programArgument '--nogui'
             gameDirectory = project.file('runs/audit-vanilla')
+            // -PfuSingleThread: one worldgen worker, so decoration order is reproducible (gate 5 strict mode)
+            if (project.hasProperty('fuSingleThread')) { jvmArgument '-Dmax.bg.threads=1' }
             loadedMods = [mods.fudevtools]
             jvmArguments.addAll '-Xmx3G', '-Xms1G'
             logLevel = org.slf4j.event.Level.INFO
@@ -108,6 +110,8 @@ neoForge {
             server()
             programArgument '--nogui'
             gameDirectory = project.file('runs/audit-modded')
+            // -PfuSingleThread: one worldgen worker, so decoration order is reproducible (gate 5 strict mode)
+            if (project.hasProperty('fuSingleThread')) { jvmArgument '-Dmax.bg.threads=1' }
             loadedMods = [mods."${mod_id}", mods.fudevtools]
             jvmArguments.addAll '-Xmx3G', '-Xms1G'
             logLevel = org.slf4j.event.Level.INFO

@@ -134,7 +134,22 @@ final class AuditRunner {
             scan.put("ores", this.scanner.oresById());
             scan.put("histogram", this.scanner.histogramById());
             scan.put("chunkHashes", this.scanner.chunkHashes);
+            scan.put("sectionHashes", this.scanner.sectionHashes);
             out.put("scan", scan);
+        }
+        if (this.config.terrainHashRadius() > 0) {
+            // Gate 5a: terrain-only determinism. A disjoint region is generated only to CARVERS
+            // (noise, surface, carvers - no features), where vanilla is expected to be exact.
+            int r = this.config.terrainHashRadius();
+            int cx = this.config.centerX() + this.config.radius() + 64;
+            int cz = this.config.centerZ();
+            ChunkGen.Result res = ChunkGen.generate(level.getChunkSource(), cx - r, cz - r, cx + r, cz + r,
+                net.minecraft.world.level.chunk.status.ChunkStatus.CARVERS);
+            Map<String, String> terrain = new java.util.TreeMap<>();
+            for (net.minecraft.world.level.chunk.ChunkAccess c : res.chunks()) {
+                terrain.put(c.getPos().x() + "," + c.getPos().z(), ChunkScanner.hash(c));
+            }
+            out.put("terrainHashes", terrain);
         }
         if (this.config.structures()) {
             BlockPos origin = new BlockPos(this.config.centerX() * 16 + 8, 0, this.config.centerZ() * 16 + 8);

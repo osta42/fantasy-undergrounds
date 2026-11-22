@@ -122,11 +122,30 @@ def structure_gate(base, cand):
     return ok, rows
 
 
-def determinism_gate(a, b):
+def determinism(a, b):
+    """Compare two fresh-world runs. Returns full-chunk, per-section-band and terrain-only results."""
     ha, hb = a["scan"]["chunkHashes"], b["scan"]["chunkHashes"]
     keys = sorted(set(ha) | set(hb))
     diff = [k for k in keys if ha.get(k) != hb.get(k)]
-    return not diff, len(keys), diff
+    # Section index 0 is y=-64..-49 in the Overworld; bucket mismatching sections by 16-block band.
+    bands = {}
+    sa, sb = a["scan"].get("sectionHashes", {}), b["scan"].get("sectionHashes", {})
+    sec_total = sec_diff = 0
+    for k in keys:
+        la, lb = sa.get(k), sb.get(k)
+        if not la or not lb:
+            continue
+        for i, (x, y) in enumerate(zip(la, lb)):
+            sec_total += 1
+            if x != y:
+                sec_diff += 1
+                band = -64 + 16 * i
+                bands[band] = bands.get(band, 0) + 1
+    ta, tb = a.get("terrainHashes", {}), b.get("terrainHashes", {})
+    tkeys = sorted(set(ta) | set(tb))
+    tdiff = [k for k in tkeys if ta.get(k) != tb.get(k)]
+    return {"chunks": len(keys), "diff": diff, "sections": sec_total, "section_diff": sec_diff,
+            "bands": dict(sorted(bands.items())), "terrain_chunks": len(tkeys), "terrain_diff": tdiff}
 
 
 def fmt(x, nd=1):
@@ -144,6 +163,7 @@ def main():
     ap.add_argument("baseline")
     ap.add_argument("candidate")
     ap.add_argument("--candidate2")
+    ap.add_argument("--baseline2", help="second fresh-world vanilla run, to measure vanilla's own variation")
     ap.add_argument("--ore-tolerance", type=float, default=15.0)
     ap.add_argument("--perf-tolerance", type=float, default=30.0)
     ap.add_argument("--md")
@@ -192,10 +212,30 @@ def main():
     # Gate 5 - determinism
     if args.candidate2:
         c2 = load(args.candidate2)
-        ok, n, diff = determinism_gate(cand, c2)
-        gates["5 Determinism"] = ok
-        w(f"\n## Gate 5 - determinism (`{cand['label']}` vs `{c2['label']}`)\n\n"
-          f"- chunks compared: {n}\n- mismatching chunks: {len(diff)}" + (f" (first: {diff[:10]})" if diff else ""))
+        dc = determinism(cand, c2)
+        dv = determinism(base, load(args.baseline2)) if args.baseline2 else None
+        strict_ok = not dc["diff"]
+        terrain_ok = dc["terrain_chunks"] > 0 and not dc["terrain_diff"]
+        rate_c = len(dc["diff"]) / max(1, dc["chunks"])
+        gates["5 Determinism - strict, as written (full chunks identical)"] = strict_ok
+        gates["5a Determinism - terrain before features identical"] = terrain_ok
+        if dv:
+            rate_v = len(dv["diff"]) / max(1, dv["chunks"])
+            sec_c = dc["section_diff"] / max(1, dc["sections"])
+            sec_v = dv["section_diff"] / max(1, dv["sections"])
+            # Proposed relative gate: no more decoration-order variation than vanilla's own (+25% slack).
+            gates["5b Determinism - full-chunk variation <= vanilla's own"] = sec_c <= sec_v * 1.25 + 1e-9
+        w("\n## Gate 5 - determinism (two fresh worlds, same seed and config)\n")
+        w("| | candidate pair | vanilla pair |\n|---|---:|---:|")
+        w(f"| terrain-only chunks (noise+surface+carvers) mismatching | {len(dc['terrain_diff'])} / {dc['terrain_chunks']} | "
+          + (f"{len(dv['terrain_diff'])} / {dv['terrain_chunks']}" if dv else "n/a") + " |")
+        w(f"| FULL chunks mismatching | {len(dc['diff'])} / {dc['chunks']} ({100*rate_c:.1f}%) | "
+          + (f"{len(dv['diff'])} / {dv['chunks']} ({100*rate_v:.1f}%)" if dv else "n/a") + " |")
+        w(f"| FULL sections mismatching | {dc['section_diff']} / {dc['sections']} | "
+          + (f"{dv['section_diff']} / {dv['sections']}" if dv else "n/a") + " |")
+        w(f"\nMismatching sections by Y band (candidate): {dc['bands']}")
+        if dv:
+            w(f"\nMismatching sections by Y band (vanilla): {dv['bands']}")
 
     # Gate 6 - structures
     if "structures" in base and "structures" in cand:
