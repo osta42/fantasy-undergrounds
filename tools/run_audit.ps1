@@ -21,7 +21,10 @@ param(
     [switch]$NoScan,
     [switch]$NoStructures,
     [switch]$NoRegistryDump,
-    [switch]$SingleThread
+    [switch]$SingleThread,
+    [int]$EstimateRadius = 0,
+    [switch]$EstimateOnly,
+    [switch]$OreMods
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -56,6 +59,8 @@ scan=$((-not $NoScan).ToString().ToLower())
 structures=$((-not $NoStructures).ToString().ToLower())
 structureSearchRadius=$StructureSearchRadius
 registryDump=$((-not $NoRegistryDump).ToString().ToLower())
+estimateRadius=$EstimateRadius
+estimateOnly=$($EstimateOnly.IsPresent.ToString().ToLower())
 "@ | Set-Content -Encoding ascii (Join-Path $gameDir 'fu-audit.properties')
 
 if (-not $env:JAVA_HOME) {
@@ -75,6 +80,7 @@ $gradleOut = Join-Path $gameDir "gradle-$Label.out"
 $ErrorActionPreference = 'Continue'
 $gradleArgs = @('-p', $root, $task, '--no-configuration-cache', '-q')
 if ($SingleThread) { $gradleArgs += '-PfuSingleThread' }
+if ($OreMods) { $gradleArgs += '-PfuOreMods' }
 & (Join-Path $root 'gradlew.bat') @gradleArgs 2>&1 | Out-File -Encoding utf8 $gradleOut
 $gradleExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'

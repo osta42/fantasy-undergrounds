@@ -11,7 +11,9 @@
 param(
     [Parameter(Mandatory = $true)][string]$Tag,
     [switch]$SkipVanilla,
-    [switch]$SkipPregen
+    [switch]$SkipPregen,
+    [int]$RadiusChunks = 32,
+    [switch]$NoOreMods
 )
 $ErrorActionPreference = 'Continue'
 $root = Split-Path -Parent $PSScriptRoot
@@ -31,6 +33,9 @@ if (-not $SkipPregen) {
 
 foreach ($j in $jobs) {
     $variant, $label, $extra = $j
+    $extra = $extra.Clone()
+    if (-not $extra.ContainsKey('RadiusChunks')) { $extra['RadiusChunks'] = $RadiusChunks }
+    if (-not $NoOreMods) { $extra['OreMods'] = $true }
     Write-Output "=== $label ($variant) $(Get-Date -Format HH:mm:ss)"
     & $audit -Variant $variant -Label $label @extra
 }

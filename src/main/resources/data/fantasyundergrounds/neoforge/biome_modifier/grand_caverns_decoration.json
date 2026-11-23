@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:grand_caverns/large_dripstone",
+    "fantasyundergrounds:grand_caverns/stalactites"
+  ],
+  "step": "underground_decoration"
+}

@@ -14,6 +14,8 @@ import java.util.Properties;
  * @param structures  run the structure probe (gate 6)
  * @param structureSearchRadius search radius for /locate-equivalent, in chunks
  * @param registryDump write the biome feature/carver dump (gate 7)
+ * @param estimateRadius    half-size in blocks of the density-only open-volume estimate; 0 = off
+ * @param estimateOnly      run only the estimate, skip chunk generation
  * @param terrainHashRadius half-size in chunks of a separate region generated only up to the
  *                    carver stage (terrain without decoration) and hashed for gate 5a; 0 = off
  */
@@ -27,7 +29,9 @@ public record AuditConfig(
     boolean structures,
     int structureSearchRadius,
     boolean registryDump,
-    int terrainHashRadius
+    int terrainHashRadius,
+    int estimateRadius,
+    boolean estimateOnly
 ) {
     static AuditConfig from(Properties p) {
         return new AuditConfig(
@@ -40,7 +44,9 @@ public record AuditConfig(
             Boolean.parseBoolean(p.getProperty("structures", "true")),
             Integer.parseInt(p.getProperty("structureSearchRadius", "100")),
             Boolean.parseBoolean(p.getProperty("registryDump", "true")),
-            Integer.parseInt(p.getProperty("terrainHashRadius", "8"))
+            Integer.parseInt(p.getProperty("terrainHashRadius", "8")),
+            Integer.parseInt(p.getProperty("estimateRadius", "0")),
+            Boolean.parseBoolean(p.getProperty("estimateOnly", "false"))
         );
     }
 }

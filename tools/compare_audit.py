@@ -19,6 +19,8 @@ import re
 import sys
 
 FAR_CHUNK = "Detected setBlock in a far chunk"
+UNSAFE_READ = "Detected unsafe terrain read during worldgen"
+OWN_NAMESPACE = "fantasyundergrounds:"
 EXC_RE = re.compile(r"(Exception|Error)(:|\s+at\s)|^\s+at\s+[\w.$]+\(", re.M)
 STRUCT_INTACT_RATIO = 0.95
 
@@ -46,13 +48,24 @@ def log_stats(text):
     if text is None:
         return None
     far = text.count(FAR_CHUNK)
+    # Worldgen boundary violations, attributed to the feature that caused them.
+    by_feature = {}
+    own = 0
+    for l in text.splitlines():
+        if FAR_CHUNK in l or UNSAFE_READ in l:
+            m = re.search(r"currently generating: ResourceKey\[[^\]]*? / ([^\]]+)\]", l)
+            feat = m.group(1) if m else "<unknown>"
+            by_feature[feat] = by_feature.get(feat, 0) + 1
+            if OWN_NAMESPACE in l:
+                own += 1
     error_lines = [l for l in text.splitlines() if "/ERROR]" in l and not any(b in l for b in BENIGN)]
     sigs = set()
     for l in text.splitlines():
         m = SIG_RE.match(l.strip())
         if m and not any(b in l for b in BENIGN):
             sigs.add(m.group(1) + ": " + re.sub(r"\d+", "#", m.group(2))[:160])
-    return {"far_chunk_warnings": far, "error_lines": len(error_lines), "signatures": sigs,
+    return {"far_chunk_warnings": far, "own_violations": own, "violations_by_feature": by_feature,
+            "error_lines": len(error_lines), "signatures": sigs,
             "first_errors": error_lines[:5]}
 
 
@@ -200,11 +213,15 @@ def main():
         w("\n_Gate 4 skipped: log missing._")
     else:
         new_sigs = sorted(cst["signatures"] - bst["signatures"])
-        gates["4 Stability (this run)"] = cst["far_chunk_warnings"] == 0 and not new_sigs
+        gates["4 Stability (this run)"] = cst["far_chunk_warnings"] == 0 and cst["own_violations"] == 0 and not new_sigs
         w("\n## Gate 4 - log check\n\n| | baseline | candidate |\n|---|---:|---:|")
         w(f"| far-chunk warnings | {bst['far_chunk_warnings']} | {cst['far_chunk_warnings']} |")
+        w(f"| unsafe reads / far writes by this mod's features | {bst['own_violations']} | {cst['own_violations']} |")
         w(f"| ERROR lines (excluding known dev noise) | {bst['error_lines']} | {cst['error_lines']} |")
         w(f"| exception signatures | {len(bst['signatures'])} | {len(cst['signatures'])} |")
+        if cst["violations_by_feature"]:
+            w("\nWorldgen boundary violations by feature (candidate; only this mod's are gated): "
+              + ", ".join(f"`{k}` x{v}" for k, v in sorted(cst["violations_by_feature"].items(), key=lambda kv: -kv[1])))
         w(f"\nNew exception signatures in candidate: {len(new_sigs)}")
         for sig in new_sigs[:10]:
             w(f"  - `{sig}`")
@@ -217,15 +234,17 @@ def main():
         strict_ok = not dc["diff"]
         terrain_ok = dc["terrain_chunks"] > 0 and not dc["terrain_diff"]
         rate_c = len(dc["diff"]) / max(1, dc["chunks"])
-        gates["5 Determinism - strict, as written (full chunks identical)"] = strict_ok
+        # Approved replacement for gate 5 (BASELINES.md): 5a terrain exact, 5b FU functions pure,
+        # 5c finished-chunk variation reported only. The strict wording is shown for reference;
+        # vanilla itself fails it, so it is not part of the pass/fail summary.
+        info_strict = "fails in vanilla too" if not strict_ok else "identical"
         gates["5a Determinism - terrain before features identical"] = terrain_ok
-        if dv:
-            rate_v = len(dv["diff"]) / max(1, dv["chunks"])
-            sec_c = dc["section_diff"] / max(1, dc["sections"])
-            sec_v = dv["section_diff"] / max(1, dv["sections"])
-            # Proposed relative gate: no more decoration-order variation than vanilla's own (+25% slack).
-            gates["5b Determinism - full-chunk variation <= vanilla's own"] = sec_c <= sec_v * 1.25 + 1e-9
+        purity = cand.get("purity")
+        gates["5b Determinism - FU functions pure (bit-exact across instances/threads)"] = (
+            purity is not None and purity.get("mismatches") == 0)
+        rate_v = len(dv["diff"]) / max(1, dv["chunks"]) if dv else None
         w("\n## Gate 5 - determinism (two fresh worlds, same seed and config)\n")
+        w(f"Strict wording (all finished chunks identical): {'PASS' if strict_ok else 'FAIL'} ({info_strict}; see BASELINES.md)\n")
         w("| | candidate pair | vanilla pair |\n|---|---:|---:|")
         w(f"| terrain-only chunks (noise+surface+carvers) mismatching | {len(dc['terrain_diff'])} / {dc['terrain_chunks']} | "
           + (f"{len(dv['terrain_diff'])} / {dv['terrain_chunks']}" if dv else "n/a") + " |")
@@ -233,6 +252,10 @@ def main():
           + (f"{len(dv['diff'])} / {dv['chunks']} ({100*rate_v:.1f}%)" if dv else "n/a") + " |")
         w(f"| FULL sections mismatching | {dc['section_diff']} / {dc['sections']} | "
           + (f"{dv['section_diff']} / {dv['sections']}" if dv else "n/a") + " |")
+        if purity is not None:
+            w(f"| FU purity self-test: mismatches over {purity.get('samples')} positions | {purity.get('mismatches', purity.get('error'))} | n/a |")
+        w(f"\n5c (reported only): finished chunks differing - candidate {100*rate_c:.1f}%"
+          + (f", vanilla {100*rate_v:.1f}%" if dv else ""))
         w(f"\nMismatching sections by Y band (candidate): {dc['bands']}")
         if dv:
             w(f"\nMismatching sections by Y band (vanilla): {dv['bands']}")

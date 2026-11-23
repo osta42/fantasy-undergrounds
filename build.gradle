@@ -32,7 +32,11 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    // Modrinth maven: dev-only test mods for the ore audit (gate 2). Never a dependency of the mod.
+    exclusiveContent {
+        forRepository { maven { url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
+    }
 }
 
 base {
@@ -144,6 +148,18 @@ configurations {
 }
 
 dependencies {
+    // -PfuOreMods: third-party ore mods with 26.2 NeoForge builds, loaded in dev runs only so the
+    // ore audit (gate 2) covers modded ores. localRuntime is not published as a dependency.
+    if (project.hasProperty('fuOreMods')) {
+        localRuntime 'maven.modrinth:occultism:bTXjaivx'    // 26.2-neoforge-1.256.1 (silver ore)
+        localRuntime 'maven.modrinth:geckolib:IEGPh4CJ'     // 5.5.6
+        localRuntime 'maven.modrinth:modonomicon:nYeh8m3L'  // 26.2-2.5.0
+        localRuntime 'maven.modrinth:curios:BI7D0sbK'       // 16.0.0+26.2
+        localRuntime 'maven.modrinth:powah:brtD7Pyx'        // 8.0.1-alpha (uraninite ore)
+        localRuntime 'maven.modrinth:guideme:kCCUXhEU'      // 26.2.2-alpha
+        localRuntime 'maven.modrinth:cloth-config:zErG1kOw' // 26.2.155+neoforge
+    }
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"

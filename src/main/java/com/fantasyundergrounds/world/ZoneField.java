@@ -1,0 +1,241 @@
+package com.fantasyundergrounds.world;
+
+import com.fantasyundergrounds.config.FuSettings;
+
+/**
+ * Deterministic environment zones (PLAN.md 2.1). Independent of biomes.
+ *
+ * <p>Space is divided into horizontal jittered cells (~192 blocks at cavernSizeScale 1.0) whose
+ * borders are domain-warped in 3D, so walls between zones curve and lean instead of being
+ * vertical planes. Every cell has two vertical <em>slots</em>: a deep one (below about y=0) and a
+ * shallow one. Each slot independently rolls an environment from a depth-dependent probability
+ * table, plus the parameters of its chamber (centre height, height, flags). A tall deep chamber
+ * claims the whole column and leaves the shallow slot empty, which keeps the vertical budget.
+ *
+ * <p>All values are pure functions of (seed, settings, position), so the same object answers
+ * the density functions and the decoration placement filters identically on any thread.
+ */
+public final class ZoneField {
+    private static final long SALT_JITTER = 0x6A09E667F3BCC908L;
+    private static final long SALT_DEEP = 0xBB67AE8584CAA73BL;
+    private static final long SALT_SHALLOW = 0x3C6EF372FE94F82BL;
+    private static final long SALT_PARAMS = 0xA54FF53A5F1D36F1L;
+
+    /** Default per-slot environment chances. Order matches {@link #CAVERN_ENVS}. */
+    private static final Environment[] CAVERN_ENVS = {
+        Environment.GRAND_CAVERNS, Environment.DROWNED_ABYSSES, Environment.INFERNAL_CHASMS,
+        Environment.UNDERGROUND_FORESTS, Environment.CRYSTAL_HOLLOWS, Environment.ROOT_SYSTEMS
+    };
+    private static final double[] DEEP_CHANCE = {0.065, 0.029, 0.052, 0.013, 0.021, 0.009};
+    private static final double[] SHALLOW_CHANCE = {0.042, 0.034, 0.008, 0.021, 0.017, 0.017};
+
+    private final long seed;
+    private final FuSettings settings;
+    private final double cell;
+    private final double warpAmp;
+    private final FuNoise warpX;
+    private final FuNoise warpZ;
+    private final double[] deepCdf;
+    private final double[] shallowCdf;
+
+    public ZoneField(long seed, FuSettings settings) {
+        this.seed = seed;
+        this.settings = settings;
+        this.cell = 192.0 * settings.cavernSize();
+        this.warpAmp = 55.0 * settings.cavernSize();
+        this.warpX = new FuNoise(seed, 0x51A7L, 2);
+        this.warpZ = new FuNoise(seed, 0x51A8L, 2);
+        this.deepCdf = cdf(DEEP_CHANCE, settings);
+        this.shallowCdf = cdf(SHALLOW_CHANCE, settings);
+    }
+
+    private static double[] cdf(double[] base, FuSettings s) {
+        double[] p = new double[base.length];
+        double sum = 0;
+        for (int i = 0; i < base.length; i++) {
+            p[i] = base[i] * s.intensity() * s.frequency(CAVERN_ENVS[i]);
+            sum += p[i];
+        }
+        double scale = sum > 0.9 ? 0.9 / sum : 1.0; // always leave >= 10% ordinary rock
+        double acc = 0;
+        for (int i = 0; i < p.length; i++) {
+            acc += p[i] * scale;
+            p[i] = acc;
+        }
+        return p;
+    }
+
+    public long seed() {
+        return this.seed;
+    }
+
+    public FuSettings settings() {
+        return this.settings;
+    }
+
+    public double cellSize() {
+        return this.cell;
+    }
+
+    /** Chamber parameters of one slot of one cell. */
+    public record Slot(
+        Environment env,
+        double centerY,
+        double height,
+        boolean giant,
+        double pillarChance,
+        boolean bridge,
+        double bridgeOffset,
+        double radius,
+        long hash
+    ) {
+        static final Slot EMPTY = new Slot(Environment.ORDINARY, 0, 0, false, 0, false, 0, 0, 0);
+
+        public boolean isCavern() {
+            return this.env != Environment.ORDINARY;
+        }
+
+        public double floorY() {
+            return this.centerY - this.height * 0.5;
+        }
+
+        public double ceilY() {
+            return this.centerY + this.height * 0.5;
+        }
+    }
+
+    /** Result of a lookup. {@code edge} is 0 on a cell border and grows towards the cell centre. */
+    public record Sample(int cellX, int cellZ, double f1, double edge, Slot slot, boolean mergedWithNeighbour) {}
+
+    /** Both slots of a cell (computed from the cell hash only). */
+    public record Column(Slot deep, Slot shallow) {}
+
+    public Sample sample(double x, double y, double z) {
+        double s = this.cell;
+        // Low-frequency 3D warp: borders curve horizontally and lean with height.
+        double wx = x + this.warpAmp * this.warpX.sample(x / 140.0, y / 80.0, z / 140.0);
+        double wz = z + this.warpAmp * this.warpZ.sample(x / 140.0, y / 80.0, z / 140.0);
+        int bx = (int) Math.floor(wx / s);
+        int bz = (int) Math.floor(wz / s);
+        double f1 = Double.MAX_VALUE;
+        double f2 = Double.MAX_VALUE;
+        int c1x = 0, c1z = 0, c2x = 0, c2z = 0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int cx = bx + dx;
+                int cz = bz + dz;
+                long h = Hash.cell(this.seed, SALT_JITTER, cx, 0, cz);
+                double px = (cx + 0.5 + 0.7 * (Hash.unit(h) - 0.5)) * s;
+                double pz = (cz + 0.5 + 0.7 * (Hash.unit(Hash.fmix(h)) - 0.5)) * s;
+                double ddx = (wx - px) / s;
+                double ddz = (wz - pz) / s;
+                double d = Math.sqrt(ddx * ddx + ddz * ddz);
+                if (d < f1) {
+                    f2 = f1; c2x = c1x; c2z = c1z;
+                    f1 = d; c1x = cx; c1z = cz;
+                } else if (d < f2) {
+                    f2 = d; c2x = cx; c2z = cz;
+                }
+            }
+        }
+        Column col = column(c1x, c1z);
+        Slot slot = pickSlot(col, y);
+        boolean merged = false;
+        if (slot.giant()) {
+            // Two adjacent giant chambers of the same environment and depth open into one cavern
+            // hundreds of blocks across: the wall between them is dropped.
+            Column other = column(c2x, c2z);
+            Slot o = pickSlot(other, y);
+            merged = o.giant() && o.env() == slot.env();
+        }
+        return new Sample(c1x, c1z, f1, f2 - f1, slot, merged);
+    }
+
+    /** Jittered centre of a cell in warped space, {x, z}; the real chamber is within ~55 blocks. */
+    public double[] cellPoint(int cx, int cz) {
+        long h = Hash.cell(this.seed, SALT_JITTER, cx, 0, cz);
+        return new double[] {
+            (cx + 0.5 + 0.7 * (Hash.unit(h) - 0.5)) * this.cell,
+            (cz + 0.5 + 0.7 * (Hash.unit(Hash.fmix(h)) - 0.5)) * this.cell
+        };
+    }
+
+    /** Slot whose vertical band contains y. */
+    private static Slot pickSlot(Column col, double y) {
+        Slot deep = col.deep();
+        Slot shallow = col.shallow();
+        double split;
+        if (deep.isCavern() && shallow.isCavern()) {
+            split = (deep.ceilY() + shallow.floorY()) * 0.5;
+        } else if (deep.isCavern()) {
+            split = deep.ceilY() + 8;
+        } else if (shallow.isCavern()) {
+            split = shallow.floorY() - 8;
+        } else {
+            return Slot.EMPTY;
+        }
+        return y < split ? deep : shallow;
+    }
+
+    public Column column(int cx, int cz) {
+        Slot deep = slot(cx, cz, true);
+        Slot shallow = deep.isCavern() && deep.height() >= 56 ? Slot.EMPTY : slot(cx, cz, false);
+        return new Column(deep, shallow);
+    }
+
+    private Slot slot(int cx, int cz, boolean deep) {
+        long h = Hash.cell(this.seed, deep ? SALT_DEEP : SALT_SHALLOW, cx, 0, cz);
+        // (radius of the chamber footprint is derived from the params hash below)
+        double u = Hash.unit(h);
+        double[] cdf = deep ? this.deepCdf : this.shallowCdf;
+        Environment env = Environment.ORDINARY;
+        for (int i = 0; i < cdf.length; i++) {
+            if (u < cdf[i]) {
+                env = CAVERN_ENVS[i];
+                break;
+            }
+        }
+        if (env == Environment.ORDINARY) {
+            return Slot.EMPTY;
+        }
+        long p = Hash.cell(this.seed, SALT_PARAMS, cx, deep ? 0 : 1, cz);
+        double r1 = Hash.unit(p);
+        double r2 = Hash.unit(p = Hash.fmix(p));
+        double r3 = Hash.unit(p = Hash.fmix(p));
+        double r4 = Hash.unit(p = Hash.fmix(p));
+        double r5 = Hash.unit(p = Hash.fmix(p));
+        double r6 = Hash.unit(p = Hash.fmix(p));
+
+        int maxH = this.settings.maxCavernHeight();
+        double minH;
+        double maxHEnv;
+        switch (env) {
+            case GRAND_CAVERNS -> { minH = 30; maxHEnv = maxH; }
+            case INFERNAL_CHASMS -> { minH = 28; maxHEnv = Math.min(maxH, 70); }
+            case DROWNED_ABYSSES -> { minH = 22; maxHEnv = Math.min(maxH, 50); }
+            default -> { minH = 18; maxHEnv = Math.min(maxH, 40); }
+        }
+        // Deeper = more dramatic: deep slots skew tall, shallow slots stay modest.
+        double skew = deep ? Math.pow(r1, 1.3) : Math.pow(r1, 2.0);
+        double height = minH + (maxHEnv - minH) * skew;
+        if (!deep) {
+            height = Math.min(height, 44);
+        }
+        double centerY;
+        double minY = this.settings.minY() + 2;
+        double maxY = this.settings.maxY() - 6;
+        if (deep) {
+            centerY = -34 + 16 * (r2 - 0.5);
+            centerY = Math.max(centerY, minY + height * 0.5);
+        } else {
+            centerY = 16 + 14 * (r2 - 0.5);
+            centerY = Math.min(centerY, maxY - height * 0.5);
+        }
+        boolean giant = env == Environment.GRAND_CAVERNS && deep && r3 < 0.35;
+        double pillarChance = env == Environment.GRAND_CAVERNS ? 0.25 + 0.35 * r4 : 0.08 * r4;
+        boolean bridge = env == Environment.GRAND_CAVERNS && height >= 36 && r5 < 0.6;
+        double bridgeOffset = (r6 - 0.5) * height * 0.4;
+        double radius = giant ? 0.62 : 0.30 + 0.14 * r6;   // footprint radius, cell units
+        return new Slot(env, centerY, height, giant, pillarChance, bridge, bridgeOffset, radius, p);
+    }
+}

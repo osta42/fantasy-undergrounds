@@ -1,9 +1,11 @@
 package com.fantasyundergrounds;
 
+import com.fantasyundergrounds.config.FuConfig;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import org.slf4j.Logger;
 
 @Mod(FantasyUndergrounds.MODID)
@@ -12,6 +14,9 @@ public final class FantasyUndergrounds {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public FantasyUndergrounds(IEventBus modBus, ModContainer container) {
-        LOGGER.info("Fantasy Undergrounds loading (Phase 0 skeleton)");
+        // STARTUP: read immediately, before registries and worlds load (PLAN.md 2.8).
+        container.registerConfig(ModConfig.Type.STARTUP, FuConfig.SPEC);
+        FuRegistries.register(modBus);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(FuCommands::register);
     }
 }

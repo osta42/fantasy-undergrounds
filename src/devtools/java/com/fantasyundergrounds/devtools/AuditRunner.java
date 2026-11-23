@@ -34,12 +34,15 @@ final class AuditRunner {
     private long genChunks;
     private boolean finished;
     private boolean warmedUp;
+    private final SliceImages slices;
+    private Map<String, Object> estimate;
 
     AuditRunner(MinecraftServer server, AuditConfig config) {
         this.server = server;
         this.config = config;
         int minX = config.centerX() - config.radius();
         int minZ = config.centerZ() - config.radius();
+        this.slices = config.scan() ? new SliceImages(minX, minZ, 2 * config.radius()) : null;
         int maxX = config.centerX() + config.radius();
         int maxZ = config.centerZ() + config.radius();
         for (int x = minX; x < maxX; x += config.tile()) {
@@ -58,6 +61,15 @@ final class AuditRunner {
             return;
         }
         try {
+            if (this.config.estimateRadius() > 0 && this.estimate == null) {
+                this.estimate = DensityEstimator.run(this.server.overworld(),
+                    this.config.centerX() * 16, this.config.centerZ() * 16, this.config.estimateRadius());
+                if (this.config.estimateOnly()) {
+                    this.tiles.clear();
+                    this.warmedUp = true;
+                }
+                return;
+            }
             if (!this.warmedUp) {
                 // JIT warm-up on a disjoint area (not measured, not scanned): without it the first
                 // measured tiles run ~1.7x slower and skew the performance gate.
@@ -94,6 +106,7 @@ final class AuditRunner {
                         throw new IllegalStateException("chunk " + x + "," + z + " not FULL after generation");
                     }
                     this.scanner.scan(level, chunk);
+                    this.slices.record(chunk);
                 }
             }
         }
@@ -113,6 +126,9 @@ final class AuditRunner {
         out.put("mods", mods);
         out.put("availableProcessors", Runtime.getRuntime().availableProcessors());
 
+        if (this.estimate != null) {
+            out.put("densityEstimate", this.estimate);
+        }
         Map<String, Object> perf = new LinkedHashMap<>();
         perf.put("chunks", this.genChunks);
         perf.put("totalGenMs", this.genNanos / 1_000_000.0);
@@ -137,7 +153,7 @@ final class AuditRunner {
             scan.put("sectionHashes", this.scanner.sectionHashes);
             out.put("scan", scan);
         }
-        if (this.config.terrainHashRadius() > 0) {
+        if (this.config.terrainHashRadius() > 0 && !this.config.estimateOnly()) {
             // Gate 5a: terrain-only determinism. A disjoint region is generated only to CARVERS
             // (noise, surface, carvers - no features), where vanilla is expected to be exact.
             int r = this.config.terrainHashRadius();
@@ -151,14 +167,40 @@ final class AuditRunner {
             }
             out.put("terrainHashes", terrain);
         }
-        if (this.config.structures()) {
+        if (this.config.structures() && !this.config.estimateOnly()) {
             BlockPos origin = new BlockPos(this.config.centerX() * 16 + 8, 0, this.config.centerZ() * 16 + 8);
             out.put("structures", StructureProbe.run(level, origin, this.config.structureSearchRadius()));
+        }
+        if (ModList.get().isLoaded("fantasyundergrounds")) {
+            // Exercise the operator commands from world origin (also gives coordinates for
+            // in-game checks). Output goes to the server log.
+            for (String env : new String[] {"grand_caverns", "drowned_abysses", "infernal_chasms", "crystal_hollows"}) {
+                this.server.getCommands().performPrefixedCommand(this.server.createCommandSourceStack(),
+                    "execute in minecraft:overworld positioned 0 0 0 run fantasyundergrounds locate " + env);
+            }
+        }
+        if (ModList.get().isLoaded("fantasyundergrounds") && !this.config.estimateOnly()) {
+            // Gate 5b: purity self-test, called reflectively so this dev mod has no compile-time
+            // dependency on the cave mod (it must also run in vanilla baseline worlds).
+            try {
+                Class<?> c = Class.forName("com.fantasyundergrounds.world.FuSelfTest");
+                out.put("purity", c.getMethod("run", long.class, int.class).invoke(null, level.getSeed(), 200_000));
+            } catch (ReflectiveOperationException e) {
+                FuDevTools.LOGGER.error("[fu-audit] purity self-test failed to run", e);
+                out.put("purity", Map.of("error", e.toString()));
+            }
         }
         if (this.config.registryDump()) {
             out.put("registry", RegistryDump.run(this.server));
         }
 
+        if (this.slices != null) {
+            try {
+                this.slices.write(this.server.getServerDirectory().resolve("fu-audit").resolve("slices"), this.config.label());
+            } catch (IOException e) {
+                FuDevTools.LOGGER.error("[fu-audit] cannot write slice images", e);
+            }
+        }
         Path file = this.server.getServerDirectory().resolve("fu-audit").resolve(this.config.label() + ".json");
         try {
             Files.createDirectories(file.getParent());

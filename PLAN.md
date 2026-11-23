@@ -30,28 +30,30 @@ Every API named below was checked against the decompiled 26.2 sources (`build/mo
 ## 2. Architecture decisions (Section 2 of the brief)
 
 ### 2.1 Environments are zones, not biomes
-Zones come from this mod's own deterministic **3D jittered-cell field**, independent of the biome source:
+*(Revised in Phase 1: 2D cells with two vertical slots instead of full 3D cells. This gives direct control of the vertical budget and stacked levels.)*
 
-* Space is split into large cells, about **256 × 64 × 256** blocks, with jittered centres. The cell boundaries are domain-warped by low-frequency fractal noise, so they are never straight.
-* Each cell gets one environment, chosen by hashing `(world seed, cell coordinates)` against a **depth-dependent probability table**. This makes rarity a plain per-cell probability that config can scale directly. Deeper cells have a higher chance of dramatic environments.
-* `F2 − F1` (distance to the cell edge) drives an **intensity falloff**, so every zone tapers to ordinary rock at its border. This is also why most of the underground stays solid.
-* No biomes are registered. The Overworld biome source and the climate router fields (`temperature`, `vegetation`, `continents`, `erosion`, `depth`, `ridges`) are never touched.
-* The same `ZoneField` object, keyed by world seed, is used by the density functions and by decoration features. The features query it at their own position, so terrain and decoration always agree.
+Zones come from this mod's own deterministic field (`ZoneField`), independent of the biome source:
 
-Default per-cell probabilities (config multiplies them):
+* The horizontal plane is split into jittered cells, about **192 blocks** wide at `cavernSizeScale = 1.0`. Cell borders are domain-warped by 3D noise (amplitude ~55 blocks), so walls curve and lean with height.
+* Each cell has two **slots**: a deep one (centre about y −42…−26) and a shallow one (about y 9…23). Each slot rolls its environment from a **depth-dependent table** by hashing `(seed, cell, slot)`, so rarity is a direct per-slot probability that config can scale.
+* A tall deep chamber (≥ 56 blocks) claims the whole column and leaves the shallow slot solid. This keeps the 128-block vertical budget, and two shorter chambers stacked give "multiple vertical levels".
+* Chamber footprint: rounded and lobed (radial distance from the cell centre, perturbed by multi-octave noise), always keeping a rock wall at the cell border. **Giant** Grand Caverns (35% of deep ones) reach close to the border, and two adjacent giants of the same environment drop their shared wall and merge into one cavern **hundreds of blocks across**.
+* No biomes are registered; the biome source and climate router fields are never touched.
+* The same `ZoneField` instance per seed answers both the density functions and the `fantasyundergrounds:in_zone` placement filter.
 
-| Environment | Shallow cells (centre y > 0) | Deep cells (centre y ≤ 0) |
+Default per-slot chances (multiplied by `intensity` × the environment's `frequency`; the remaining ~80% of slots are ordinary rock with tunnels):
+
+| Environment | Deep slot | Shallow slot |
 |---|---:|---:|
-| Ordinary (tunnel networks only) | ~66% | ~50% |
-| Grand Caverns | 10% | 14% |
-| Drowned Abysses | 8% | 6% |
-| Infernal Chasms | 2% | 12% |
-| Underground Forest | 5% | 3% |
-| Crystal Hollows | 4% | 5% |
-| Ancient Root Systems | 4% | 2% |
-| Grand Canyon (decided per 2D column cell, spans both layers) | 1.5% | 1.5% |
-| Floating Islands | only inside Grand Cavern cells that roll "tall" (~8% of them) | same |
-| Ancient Depths ruins | structure placement, Section 6 | |
+| Grand Caverns | 6.5% | 4.2% |
+| Drowned Abysses | 2.9% | 3.4% |
+| Infernal Chasms | 5.2% | 0.8% |
+| Underground Forest | 1.3% | 2.1% |
+| Crystal Hollows | 2.1% | 1.7% |
+| Ancient Root Systems | 0.9% | 1.7% |
+| Grand Canyons | separate 2D field (Phase 3) | |
+| Floating Islands | inside tall Grand Caverns only (Phase 3) | |
+| Ancient Depths ruins | structure placement (Phase 5) | |
 
 ### 2.2 Vanilla caves: **replaced**, not layered
 Inside the Overworld `final_density`, nodes are swapped **by registry key**:
@@ -62,14 +64,14 @@ Inside the Overworld `final_density`, nodes are swapped **by registry key**:
 | noise `minecraft:cave_layer` | constant `0`. The horizontal layering is removed; FU caverns define their own floors and ceilings |
 | `minecraft:overworld/caves/spaghetti_2d` + `spaghetti_roughness_function` | **FU tunnel network** (configurable frequency and width), plus roughness constant `0` |
 | `minecraft:overworld/caves/noodle` | **FU noodle tunnels**, or `+∞` when disabled |
-| `minecraft:overworld/caves/entrances` | kept, wrapped with a bias from the sinkhole/entrance config |
+| `minecraft:overworld/caves/entrances` | kept **only within ~40 blocks of the surface** (it also carries vanilla 3D spaghetti tunnels everywhere underground, which would otherwise layer under FU caves), plus a bias from the entrance-frequency config |
 | `minecraft:overworld/caves/pillars` | kept (it only adds solid rock) |
 
 Vanilla **carvers** `minecraft:cave`, `minecraft:cave_extra_underground` and `minecraft:canyon` are removed from biomes in `#minecraft:is_overworld` / `#c:is_overworld` with `neoforge:remove_carvers`. Only those three ids are removed. Modded carvers and every feature list stay untouched. A config switch restores the vanilla carvers.
 
 Why: keeping cheese caves and carvers under new caverns is exactly the swiss-cheese result the brief forbids. Replacing the nodes in place, rather than adding a `min()` on top, means FU caves inherit vanilla's top slide, bottom slide, old-chunk blending, interpolation, `squeeze` and the structure beardifier for free.
 
-Air budget: total open volume is targeted at **about vanilla ±10%** in each ore band. The "fantasy" scale comes from concentrating air into fewer, much larger spaces, not from adding air. Large chambers have far less wall area per unit of air than spaghetti tunnels, which also reduces ore air-exposure discards (Section 4.9).
+Air budget: total open volume is targeted near vanilla (Phase 1 result: 5.8% air below y=0 against vanilla's 7.3%, every ore within +1.6…+7.1%). The "fantasy" scale comes from concentrating air into fewer, much larger spaces, not from adding air. Large chambers have far less wall area per unit of air than spaghetti tunnels, which also reduces ore air-exposure discards (Section 4.9).
 
 ### 2.3 Integration point: one minimal Mixin
 * **Target:** `ChunkMap.<init>`, `@WrapOperation` around the single `RandomState.create(NoiseGeneratorSettings, HolderGetter, long)` call for `NoiseBasedChunkGenerator`.
