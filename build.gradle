@@ -160,6 +160,14 @@ dependencies {
         localRuntime 'maven.modrinth:cloth-config:zErG1kOw' // 26.2.155+neoforge
     }
 
+    // -PfuBopMods: Biomes O' Plenty and its libraries, loaded in dev runs only for the Phase 6
+    // compatibility audit. localRuntime is not published as a dependency.
+    if (project.hasProperty('fuBopMods')) {
+        localRuntime 'maven.modrinth:biomes-o-plenty:Kpuzuokl' // 26.2.0.0.28
+        localRuntime 'maven.modrinth:terrablender:TzDe72Nr'    // 26.2.0.0.2
+        localRuntime 'maven.modrinth:glitchcore:POAebwFo'      // 26.2.0.0.0
+    }
+
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
     // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"

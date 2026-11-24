@@ -27,11 +27,12 @@ Usage: tools/run_audit.sh --variant vanilla|modded --label LABEL [options]
   --estimate-radius N          density estimate radius in blocks (default 0 = off)
   --estimate-only              only run the density estimate
   --ore-mods                   load the third-party ore mods (-PfuOreMods)
+  --bop-mods                   load Biomes O' Plenty, TerraBlender and GlitchCore (-PfuBopMods)
 EOF
 }
 
 variant='' label='' seed=1234567890 cx=512 cz=512 radius=16 tile=16 ssr=100
-scan=true structures=true registry=true single=false estimate_radius=0 estimate_only=false ore_mods=false
+scan=true structures=true registry=true single=false estimate_radius=0 estimate_only=false ore_mods=false bop_mods=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -50,6 +51,7 @@ while [[ $# -gt 0 ]]; do
         --estimate-radius) estimate_radius="$2"; shift 2 ;;
         --estimate-only) estimate_only=true; shift ;;
         --ore-mods) ore_mods=true; shift ;;
+        --bop-mods) bop_mods=true; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
     esac
@@ -110,6 +112,7 @@ task=runAuditVanilla
 gradle_args=(-p "$root" "$task" --no-configuration-cache -q)
 [[ "$single" == true ]] && gradle_args+=(-PfuSingleThread)
 [[ "$ore_mods" == true ]] && gradle_args+=(-PfuOreMods)
+[[ "$bop_mods" == true ]] && gradle_args+=(-PfuBopMods)
 
 # Keep Gradle's console output in a file, next to the run.
 gradle_out="$game_dir/gradle-$label.out"

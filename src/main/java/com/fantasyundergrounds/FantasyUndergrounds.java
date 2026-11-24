@@ -18,5 +18,7 @@ public final class FantasyUndergrounds {
         container.registerConfig(ModConfig.Type.STARTUP, FuConfig.SPEC);
         FuRegistries.register(modBus);
         net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(FuCommands::register);
+        // Warn when an existing world is opened with a different worldgen config (PLAN.md 2.8).
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(com.fantasyundergrounds.config.FuConfigStamp::onServerStarted);
     }
 }

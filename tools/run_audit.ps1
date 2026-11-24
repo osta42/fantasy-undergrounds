@@ -24,7 +24,8 @@ param(
     [switch]$SingleThread,
     [int]$EstimateRadius = 0,
     [switch]$EstimateOnly,
-    [switch]$OreMods
+    [switch]$OreMods,
+    [switch]$BopMods
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -81,6 +82,7 @@ $ErrorActionPreference = 'Continue'
 $gradleArgs = @('-p', $root, $task, '--no-configuration-cache', '-q')
 if ($SingleThread) { $gradleArgs += '-PfuSingleThread' }
 if ($OreMods) { $gradleArgs += '-PfuOreMods' }
+if ($BopMods) { $gradleArgs += '-PfuBopMods' }
 & (Join-Path $root 'gradlew.bat') @gradleArgs 2>&1 | Out-File -Encoding utf8 $gradleOut
 $gradleExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
