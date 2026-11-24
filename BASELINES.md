@@ -85,3 +85,28 @@ Skeleton: same positions, ratio 1.000 for all four.
 * **5a (strict, exact):** terrain-stage hashes (noise → surface → carvers) must match 100% between two fresh worlds. Measured on 256 chunks, and on more if you prefer.
 * **5b (strict, exact):** each FU decoration feature must be a pure function of (seed, position, config). Tested by running each FU feature twice on identical synthetic input in a unit test and comparing the output block for block. This needs no full-world comparison, so vanilla's order dependence doesn't interfere.
 * **5c (reported, not gated):** finished-chunk mismatch rate next to vanilla's own rate, so any large regression is visible.
+
+---
+
+# Cloud baselines (from the Phase 2 re-check, used from Phase 3 on)
+
+All later phases are gated against these, because performance can only be compared on one machine.
+
+* Same seed, region and tooling as above: `tools/run_gates.sh --tag phase2-cloud` (Linux bash port of `run_gates.ps1`), 4,096-chunk audits (radius 32) and 15,876-chunk pre-generation, Occultism and Powah loaded (`-PfuOreMods`).
+* Machine: Claude Code cloud container, Linux, 4 logical CPUs (3 worldgen workers), 15 GB RAM, OpenJDK 25.0.5.1 (Ubuntu build), dev server with `-Xmx3G`.
+* Raw data: `runs/audit-vanilla/fu-audit/vanilla-a.json`, `vanilla-b.json`, `pregen-vanilla.json` (git-ignored). `reports/vanilla-self.md` now holds this machine's vanilla-vs-vanilla comparison.
+
+| metric (vanilla) | cloud | Windows laptop |
+|---|---:|---:|
+| ms per chunk, 4,096-chunk audit | 24.14 | 49.23 |
+| ms per chunk, 15,876-chunk pre-generation | 20.84 (5.5 min) | 36.36 |
+| air below y = 0 | 7.28% | 7.28% |
+| water sources below y = 0 | 322,056 | 322,723 |
+| lava sources below y = 0 | 184,913 | 184,911 |
+| dark spawnable floor positions (y ≤ 40) | 618,047 | 618,615 |
+| finished chunks differing between two fresh worlds (5c) | 64.8% | 62.3% |
+| terrain-only chunks differing (5a) | 0 / 256 | 0 / 256 |
+
+Terrain is bit-identical across the two machines (same air volume and fluid counts to within decoration noise).
+
+**Phase 2 re-check result** (`reports/phase2-cloud.md`, `reports/phase2-cloud-pregen.md`): every gate passes. Performance is −9.5% on the audit and **−7.7% on the pre-generation run**. The laptop's +29.7% pre-generation result was thermal throttling and sleep, not the mod. Ores are within −14.3% (`deepslate_emerald_ore`, 7 blocks, not gated) and +8.6% (`diamond_ore`); every gated ore is within +2.0% … +8.6%.
