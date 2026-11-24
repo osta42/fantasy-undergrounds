@@ -3,7 +3,7 @@
 * Seed `1234567890`, Overworld, region = 32 × 32 chunks centred on chunk (512, 512), i.e. blocks 7936…8447 on X and Z.
 * Minecraft 26.2, NeoForge 26.2.0.95, Java 25.0.5 (Temurin), dedicated dev server with `-Xmx3G`.
 * Machine: AMD Ryzen 5 7520U (8 logical CPUs, 7 worldgen workers), 7.3 GB RAM, Windows 11.
-* Each run uses a fresh world. Raw data: `runs/audit-vanilla/fu-audit/*.json` (git-ignored, regenerate with `tools/run_gates.ps1`).
+* Each run uses a fresh world. Raw data: `runs/audit-vanilla/fu-audit/*.json` (git-ignored, regenerate with `tools/run_gates.ps1`, or `tools/run_gates.sh` on Linux).
 * "Skeleton" = this mod as of Phase 0: it loads but changes no worldgen. Comparing against it self-tests the tooling.
 
 ## Ores, 1,024 chunks (gate 2 baseline)

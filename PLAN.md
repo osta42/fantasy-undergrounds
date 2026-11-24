@@ -175,6 +175,7 @@ All FU features stay inside the 3×3 chunk write area the generator allows, and 
 A separate dev-only mod, **`fudevtools`** (`src/devtools`), never ships. It is inert unless `fu-audit.properties` exists in the server directory. Two run configs: `auditVanilla` loads only `fudevtools`, `auditModded` loads `fantasyundergrounds` and `fudevtools`. Same seed, same region, fresh world each run.
 
 * `tools/run_audit.ps1 -Variant vanilla|modded -Label X [-RadiusChunks 16] [-NoScan] [-NoStructures]`
+  (Linux/macOS: `tools/run_audit.sh --variant vanilla|modded --label X [--radius-chunks 16] [--no-scan] [--no-structures]`; the full suite is `tools/run_gates.ps1` / `tools/run_gates.sh`)
 * `tools/compare_audit.py BASELINE.json CANDIDATE.json [--candidate2 B.json]` prints the gate table.
 
 How it measures:
