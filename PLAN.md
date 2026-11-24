@@ -51,8 +51,8 @@ Default per-slot chances (multiplied by `intensity` × the environment's `freque
 | Underground Forest | 1.3% | 2.1% |
 | Crystal Hollows | 2.1% | 1.7% |
 | Ancient Root Systems | 0.9% | 1.7% |
-| Grand Canyons | separate 2D field (Phase 3) | |
-| Floating Islands | inside tall Grand Caverns only (Phase 3) | |
+| Grand Canyons | separate 2D field (Phase 3): 1,024-block cells, one canyon per cell with 30% × intensity × frequency | |
+| Floating Islands | deep Grand Caverns ≥ 60 blocks tall only (Phase 3): 50% × frequency of those, 1–4 islands each (≈1.1% of zone cells) | |
 | Ancient Depths ruins | structure placement (Phase 5) | |
 
 ### 2.2 Vanilla caves: **replaced**, not layered
@@ -100,9 +100,13 @@ Large water and lava bodies come from the vanilla **aquifer**. The rewriter wrap
 
 | Router input | How the 26.2 aquifer calls it (verified in `Aquifer.NoiseBasedAquifer`) | Drowned Abysses | Infernal Chasms |
 |---|---|---|---|
-| `fluid_level_floodedness` | block coordinates of each aquifer grid point; > 0.8 floods fully, 0.4–0.8 gives a lake | 1.0 for "submerged" chambers (~55%), else 0.6 (lake) | 0.6 (lake) |
+| `fluid_level_floodedness` | block coordinates of each aquifer grid point; > 0.8 floods fully, 0.4–0.8 gives a lake (both thresholds drop within 64 blocks under a sea floor) | 1.0 for "submerged" chambers (~55%), else lake value | lake value |
 | `fluid_level_spread` | fluid-level **cell** coordinates (16 × 40 × 16); level = `cellY*40+20 + quantize(spread*10, 3)` | steered to floor + 45% of height | steered to floor + 22% of height |
 | `lava` | fluid-type **cell** coordinates (64 × 40 × 64); \|v\| > 0.3 = lava where level ≤ −10 | 0 (always water) | 1 (lava) |
+
+*Lake value (Phase 3):* within 64 blocks below a sea floor the aquifer lowers both thresholds by a depth factor f, so a fixed 0.6 would flood fully to sea level there. `FluidBias` recomputes f from the same 13 preliminary-surface samples the aquifer uses and returns 0.45 − 1.2 f, which is always between the partial (0.4 − 1.2 f) and full (0.8 − 1.1 f) thresholds.
+
+*Canyon rivers (Phase 3):* inside the fluid band whose middle is within 10 blocks of the river level (floor + 4.5, floored to a multiple of 3 by the aquifer, so 2–4 blocks deep) a canyon is a lake steered to that level; everywhere else in the canyon floodedness is −1 (dry), and the lava input is 0, so rivers are always water. Canyon floors are kept at −31…−21 so the river level is reachable.
 
 Each 40-block fluid band can only reach ±10 blocks around its middle. A chamber spanning two bands therefore gets lakes at two levels, and the aquifer separates them with its own rock dams and spillways. That is where the interconnected water systems and natural waterfalls come from. Inside deep-dark regions vanilla never floods, so ancient cities stay dry.
 
@@ -153,8 +157,8 @@ All FU features stay inside the 3×3 chunk write area the generator allows, and 
 * `ZoneField`: domain-warped 3D jittered cells (F1 identity, F2−F1 falloff).
 * Caverns: per-environment shape functions built from warped multi-octave simplex noise (fBm), ridged noise, 2D floor and ceiling height fields per cell (in `flat_cache`), and cellular noise for pillars. Thin noise sheets make natural bridges.
 * Tunnels: worm-style tunnels from `|n1| + |n2| < width` on two warped 3D noises, at two scales (main tunnels and noodles).
-* Canyons: warped 2D ridged noise path, terraced width profile for cliff levels, aquifer-fed river at the floor.
-* Islands: density blobs with a flattened top and a noise-perturbed tapered cone underneath.
+* Canyons *(as built in Phase 3)*: an explicit path per large cell instead of ridged noise, because it gives direct control of rarity and length: a straight axis with a 3-octave meander (±38 blocks), a stepped width profile (river channel, 2–3 cliff levels whose width steps outwards over short ledges, `pow(smoothstep, 4)`), an arched roof over the top 28%, tapered ends, rough walls from 3D noise. Aquifer-fed river at the floor (§2.5).
+* Islands *(as built in Phase 3)*: density blobs in the chamber's warped space with a gently domed, noise-perturbed top and a cone tapering to a point underneath (depth 0.9–1.4 × radius, radius 9–21), kept ≥ 14 blocks above the floor and ≥ 16 below the ceiling.
 * Everything is pure functions of `(seed, x, y, z, config)`, with no shared mutable state, so it is thread-safe and deterministic. Expensive inner functions run only at interpolation cell corners (vanilla `interpolated`), about 1.2k evaluations per chunk.
 
 ---
