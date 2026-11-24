@@ -1,0 +1,40 @@
+{
+  "feature": "fantasyundergrounds:infernal/magma_floor",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 10
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "min_inclusive": {
+          "absolute": -58
+        },
+        "max_inclusive": {
+          "absolute": 44
+        }
+      }
+    },
+    {
+      "type": "minecraft:block_predicate_filter",
+      "predicate": {
+        "type": "minecraft:matching_block_tag",
+        "tag": "minecraft:air"
+      }
+    },
+    {
+      "type": "fantasyundergrounds:in_zone",
+      "environments": [
+        "infernal_chasms"
+      ]
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

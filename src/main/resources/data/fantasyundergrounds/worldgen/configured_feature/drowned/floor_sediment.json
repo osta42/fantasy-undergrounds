@@ -1,0 +1,33 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:gravel"
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "minecraft:clay"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "minecraft:sand"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "radius": 5,
+    "depth": 2,
+    "chance": 0.6,
+    "exposure": "water",
+    "surface": "floor"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "feature": "fantasyundergrounds:infernal/blackstone_pillar",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 3
+    },
+    {
+      "type": "minecraft:in_square"
+    },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "min_inclusive": {
+          "absolute": -58
+        },
+        "max_inclusive": {
+          "absolute": 44
+        }
+      }
+    },
+    {
+      "type": "fantasyundergrounds:in_zone",
+      "environments": [
+        "infernal_chasms"
+      ]
+    },
+    {
+      "type": "minecraft:environment_scan",
+      "direction_of_search": "down",
+      "max_steps": 32,
+      "allowed_search_condition": {
+        "type": "minecraft:matching_block_tag",
+        "tag": "minecraft:air"
+      },
+      "target_condition": {
+        "type": "minecraft:has_sturdy_face",
+        "direction": "up"
+      }
+    },
+    {
+      "type": "minecraft:random_offset",
+      "xz_spread": 0,
+      "y_spread": 1
+    },
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

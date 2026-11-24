@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:drowned/floor_sediment"
+  ],
+  "step": "underground_decoration"
+}

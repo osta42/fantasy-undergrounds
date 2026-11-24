@@ -93,11 +93,12 @@ public final class RouterRewriter {
             report = "replaced cave_cheese x" + rw.cheese + ", cave_layer x" + rw.layer + ", spaghetti_2d x" + rw.spaghetti
                 + ", spaghetti_roughness x" + rw.roughness + ", noodle x" + rw.noodle + ", entrances x" + rw.entrances;
         }
+        // Aquifer inputs: Drowned Abysses flood, Infernal Chasms get lava lakes (PLAN.md 2.5).
         NoiseRouter out = new NoiseRouter(
             router.barrierNoise(),
-            router.fluidLevelFloodednessNoise(),
-            router.fluidLevelSpreadNoise(),
-            router.lavaNoise(),
+            new FluidBias(router.fluidLevelFloodednessNoise(), FluidBias.Mode.FLOODEDNESS, zones),
+            new FluidBias(router.fluidLevelSpreadNoise(), FluidBias.Mode.SPREAD, zones),
+            new FluidBias(router.lavaNoise(), FluidBias.Mode.LAVA, zones),
             router.temperature(),
             router.vegetation(),
             router.continents(),

@@ -240,8 +240,13 @@ def main():
         info_strict = "fails in vanilla too" if not strict_ok else "identical"
         gates["5a Determinism - terrain before features identical"] = terrain_ok
         purity = cand.get("purity")
-        gates["5b Determinism - FU functions pure (bit-exact across instances/threads)"] = (
-            purity is not None and purity.get("mismatches") == 0)
+        feats = (purity or {}).get("features", {})
+        feats_ok = bool(feats) and all(f.get("identical") and f.get("changedBlocks", 0) > 0 for f in feats.values())
+        gates["5b Determinism - FU functions and features pure"] = (
+            purity is not None and purity.get("mismatches") == 0 and feats_ok)
+        if feats:
+            gates["Ore safety - FU features never replace ores or non-base blocks"] = all(
+                f.get("oresTouched") == 0 and f.get("illegalReplacements") == 0 for f in feats.values())
         rate_v = len(dv["diff"]) / max(1, dv["chunks"]) if dv else None
         w("\n## Gate 5 - determinism (two fresh worlds, same seed and config)\n")
         w(f"Strict wording (all finished chunks identical): {'PASS' if strict_ok else 'FAIL'} ({info_strict}; see BASELINES.md)\n")
@@ -254,6 +259,9 @@ def main():
           + (f"{dv['section_diff']} / {dv['sections']}" if dv else "n/a") + " |")
         if purity is not None:
             w(f"| FU purity self-test: mismatches over {purity.get('samples')} positions | {purity.get('mismatches', purity.get('error'))} | n/a |")
+        for name, f in feats.items():
+            w(f"| feature `{name}` on synthetic cave: identical / changed / illegal / ores touched | "
+              f"{f.get('identical')} / {f.get('changedBlocks')} / {f.get('illegalReplacements')} / {f.get('oresTouched')} | n/a |")
         w(f"\n5c (reported only): finished chunks differing - candidate {100*rate_c:.1f}%"
           + (f", vanilla {100*rate_v:.1f}%" if dv else ""))
         w(f"\nMismatching sections by Y band (candidate): {dc['bands']}")

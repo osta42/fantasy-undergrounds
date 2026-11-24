@@ -79,7 +79,15 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         // Lobed, rounded footprint: radial distance from the zone centre (perturbed by
         // multi-octave noise) and, separately, a minimum rock wall at the zone border.
         double lobes = this.wallNoise.sample(x / 70.0, y / 40.0, z / 70.0);
-        double radial = (s.f1() + 0.16 * lobes - slot.radius()) / slot.radius();
+        double dist = s.f1();
+        if (slot.env() == Environment.INFERNAL_CHASMS) {
+            // Rift: an elongated chamber along a per-cell direction, 2.4x longer than wide.
+            double a = slot.angle();
+            double u = s.dx() * Math.cos(a) + s.dz() * Math.sin(a);
+            double v = -s.dx() * Math.sin(a) + s.dz() * Math.cos(a);
+            dist = Math.sqrt(u * u / 1.6 + v * v * 3.8);
+        }
+        double radial = (dist + 0.16 * lobes - slot.radius()) / slot.radius();
         double edge = s.mergedWithNeighbour() ? 1.0 : s.edge() + 0.05 * lobes;
         double border = (wallT - edge) / wallT;
         double wall = Math.max(radial, border);             // > 0 outside the chamber footprint
@@ -87,12 +95,19 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         double inside = clamp01(-wall);
 
         // Vertical profile: dome towards the walls, irregular floor and ceiling.
-        double domeSqrt = Math.sqrt(clamp01(inside * 1.6));
+        double domeSqrt = Math.sqrt(clamp01(inside * (slot.env() == Environment.INFERNAL_CHASMS ? 5.0 : 1.6)));
         double floorN = this.floorNoise.sample2d(x / 90.0, z / 90.0);
         // Terraced floor: smooth steps of ~6 blocks give ledges and multiple floor levels.
         double terr = floorN * height * 0.22;
         terr = Math.floor(terr / 6.0) * 6.0 + smoothstep(clamp01((terr % 6.0 + 6.0) % 6.0 / 6.0)) * 6.0 - 3.0;
         double floorY = slot.floorY() + (1.0 - domeSqrt) * height * 0.30 + terr;
+        switch (slot.env()) {
+            // Basins: lake floors sink towards the middle; fewer terraces.
+            case DROWNED_ABYSSES -> floorY -= terr * 0.6 + inside * height * 0.25;
+            // Deep vertical drops: a V-shaped trench along the rift's axis.
+            case INFERNAL_CHASMS -> floorY -= inside * inside * height * 0.45;
+            default -> { }
+        }
         double ceilY = slot.ceilY() - (1.0 - domeSqrt) * height * 0.45
             + 9.0 * this.ceilNoise.sample2d(x / 60.0, z / 60.0);
         double vertical = Math.max(floorY - y, y - ceilY) / 6.0;

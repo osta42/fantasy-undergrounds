@@ -3,7 +3,12 @@ package com.fantasyundergrounds;
 import com.fantasyundergrounds.world.biome.RemoveVanillaCarversModifier;
 import com.fantasyundergrounds.world.density.CavernDensity;
 import com.fantasyundergrounds.world.density.TunnelDensity;
+import com.fantasyundergrounds.world.density.FluidBias;
+import com.fantasyundergrounds.world.feature.PillarFeature;
+import com.fantasyundergrounds.world.feature.SkinFeature;
+import com.fantasyundergrounds.world.placement.ConfigCountPlacement;
 import com.fantasyundergrounds.world.placement.InZoneFilter;
+import net.minecraft.world.level.levelgen.feature.Feature;
 import com.mojang.serialization.MapCodec;
 import java.util.function.Supplier;
 import net.minecraft.core.registries.Registries;
@@ -20,6 +25,8 @@ public final class FuRegistries {
         DeferredRegister.create(Registries.DENSITY_FUNCTION_TYPE, FantasyUndergrounds.MODID);
     private static final DeferredRegister<PlacementModifierType<?>> PLACEMENT_TYPES =
         DeferredRegister.create(Registries.PLACEMENT_MODIFIER_TYPE, FantasyUndergrounds.MODID);
+    private static final DeferredRegister<Feature<?>> FEATURES =
+        DeferredRegister.create(Registries.FEATURE, FantasyUndergrounds.MODID);
     private static final DeferredRegister<MapCodec<? extends BiomeModifier>> BIOME_MODIFIERS =
         DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, FantasyUndergrounds.MODID);
 
@@ -27,7 +34,13 @@ public final class FuRegistries {
         // Registered so that encoding a router that contains them (debug dumps, other mods) works.
         DENSITY_TYPES.register("caverns", () -> CavernDensity.CODEC);
         DENSITY_TYPES.register("tunnels", () -> TunnelDensity.CODEC);
+        DENSITY_TYPES.register("fluid_bias", () -> FluidBias.CODEC);
     }
+
+    public static final Supplier<SkinFeature> SKIN = FEATURES.register("skin", () -> new SkinFeature(SkinFeature.Config.CODEC));
+    public static final Supplier<PillarFeature> PILLAR = FEATURES.register("pillar", () -> new PillarFeature(PillarFeature.Config.CODEC));
+    public static final Supplier<PlacementModifierType<ConfigCountPlacement>> CONFIG_COUNT =
+        PLACEMENT_TYPES.register("config_count", () -> () -> ConfigCountPlacement.CODEC);
 
     public static final Supplier<PlacementModifierType<InZoneFilter>> IN_ZONE =
         PLACEMENT_TYPES.register("in_zone", () -> () -> InZoneFilter.CODEC);
@@ -37,6 +50,7 @@ public final class FuRegistries {
     static void register(IEventBus modBus) {
         DENSITY_TYPES.register(modBus);
         PLACEMENT_TYPES.register(modBus);
+        FEATURES.register(modBus);
         BIOME_MODIFIERS.register(modBus);
     }
 

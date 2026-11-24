@@ -1,0 +1,9 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:drowned/waterfalls",
+    "fantasyundergrounds:infernal/lava_falls"
+  ],
+  "step": "fluid_springs"
+}

@@ -1,0 +1,16 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:magma_block"
+      }
+    },
+    "radius": 4,
+    "depth": 1,
+    "chance": 0.35,
+    "exposure": "air",
+    "surface": "floor"
+  }
+}

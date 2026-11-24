@@ -95,6 +95,16 @@ public final class ZoneField {
             return this.env != Environment.ORDINARY;
         }
 
+        /** Drowned Abysses only: fully submerged (about 55%) rather than a lake with air above. */
+        public boolean submerged() {
+            return this.env == Environment.DROWNED_ABYSSES && (this.hash & 0xFF) < 140;
+        }
+
+        /** Orientation of elongated chambers (Infernal rifts), radians. */
+        public double angle() {
+            return ((this.hash >>> 8) & 0xFFFF) / 65536.0 * Math.PI;
+        }
+
         public double floorY() {
             return this.centerY - this.height * 0.5;
         }
@@ -105,7 +115,7 @@ public final class ZoneField {
     }
 
     /** Result of a lookup. {@code edge} is 0 on a cell border and grows towards the cell centre. */
-    public record Sample(int cellX, int cellZ, double f1, double edge, Slot slot, boolean mergedWithNeighbour) {}
+    public record Sample(int cellX, int cellZ, double f1, double dx, double dz, double edge, Slot slot, boolean mergedWithNeighbour) {}
 
     /** Both slots of a cell (computed from the cell hash only). */
     public record Column(Slot deep, Slot shallow) {}
@@ -120,6 +130,7 @@ public final class ZoneField {
         double f1 = Double.MAX_VALUE;
         double f2 = Double.MAX_VALUE;
         int c1x = 0, c1z = 0, c2x = 0, c2z = 0;
+        double o1x = 0, o1z = 0;
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
                 int cx = bx + dx;
@@ -133,6 +144,7 @@ public final class ZoneField {
                 if (d < f1) {
                     f2 = f1; c2x = c1x; c2z = c1z;
                     f1 = d; c1x = cx; c1z = cz;
+                    o1x = ddx; o1z = ddz;
                 } else if (d < f2) {
                     f2 = d; c2x = cx; c2z = cz;
                 }
@@ -148,7 +160,7 @@ public final class ZoneField {
             Slot o = pickSlot(other, y);
             merged = o.giant() && o.env() == slot.env();
         }
-        return new Sample(c1x, c1z, f1, f2 - f1, slot, merged);
+        return new Sample(c1x, c1z, f1, o1x, o1z, f2 - f1, slot, merged);
     }
 
     /** Jittered centre of a cell in warped space, {x, z}; the real chamber is within ~55 blocks. */
@@ -235,7 +247,8 @@ public final class ZoneField {
         double pillarChance = env == Environment.GRAND_CAVERNS ? 0.25 + 0.35 * r4 : 0.08 * r4;
         boolean bridge = env == Environment.GRAND_CAVERNS && height >= 36 && r5 < 0.6;
         double bridgeOffset = (r6 - 0.5) * height * 0.4;
-        double radius = giant ? 0.62 : 0.30 + 0.14 * r6;   // footprint radius, cell units
+        // Footprint radius in cell units. Drowned Abysses are wider: enormous underground lakes.
+        double radius = giant ? 0.62 : (env == Environment.DROWNED_ABYSSES ? 0.40 + 0.15 * r6 : 0.30 + 0.14 * r6);
         return new Slot(env, centerY, height, giant, pillarChance, bridge, bridgeOffset, radius, p);
     }
 }

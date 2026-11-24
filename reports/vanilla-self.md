@@ -47,7 +47,7 @@ Seed 1234567890 / 1234567890; chunks 4096 / 4096
 | ERROR lines (excluding known dev noise) | 6756 | 6756 |
 | exception signatures | 0 | 0 |
 
-Worldgen boundary violations by feature (candidate; only this mod's are gated): `<unknown>` x6756
+Worldgen boundary violations by feature (candidate; only this mod's are gated): `occultism:grove_underground` x6756
 
 New exception signatures in candidate: 0
 
@@ -97,6 +97,6 @@ Mismatching sections by Y band (candidate): {-64: 98, -48: 215, -32: 454, -16: 6
 | 3 Performance | PASS |
 | 4 Stability (this run) | PASS |
 | 5a Determinism - terrain before features identical | PASS |
-| 5b Determinism - FU functions pure (bit-exact across instances/threads) | FAIL |
+| 5b Determinism - FU functions and features pure | FAIL |
 | 6 Structures | PASS |
 | 7 Registration | PASS |

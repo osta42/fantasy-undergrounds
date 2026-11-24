@@ -49,6 +49,7 @@ public final class FuSelfTest {
         out.put("samples", samples);
         out.put("mismatches", mismatches.get());
         out.put("configFingerprint", s.fingerprint());
+        out.put("features", FeatureSelfTest.run(seed));
         return out;
     }
 

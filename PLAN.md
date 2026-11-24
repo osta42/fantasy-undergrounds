@@ -95,9 +95,18 @@ Air budget: total open volume is targeted near vanilla (Phase 1 result: 5.8% air
 * Themed materials come only from features in `underground_decoration` or later (after `underground_ores`) and are either a **skin ≤ 2 blocks** or **free-standing formations in air**.
 * Every FU feature uses one positive replaceable tag, `fantasyundergrounds:replaceable_base` = `stone, deepslate, tuff, granite, diorite, andesite, air, cave_air`. It never uses "any solid block", so an ore from any mod can never be overwritten. Placing after the ore step also means ores never fail to place because a wall has turned into calcite.
 
-### 2.5 Fluids
-* Large lakes and lava seas come from the **aquifer**. The rewriter also wraps `fluid_level_floodedness` and `lava` with zone biases: Drowned cells push floodedness up, Infernal cells push lava up. This is composition, not replacement.
-* Placed springs and falls use FU's own spring features with a per-chunk cap from config, defaulting to 4 water and 2 lava per chunk. Gate metrics track scheduled fluid ticks.
+### 2.5 Fluids *(implemented in Phase 2)*
+Large water and lava bodies come from the vanilla **aquifer**. The rewriter wraps three aquifer inputs with `FluidBias`, which returns the original value outside Drowned/Infernal zones:
+
+| Router input | How the 26.2 aquifer calls it (verified in `Aquifer.NoiseBasedAquifer`) | Drowned Abysses | Infernal Chasms |
+|---|---|---|---|
+| `fluid_level_floodedness` | block coordinates of each aquifer grid point; > 0.8 floods fully, 0.4–0.8 gives a lake | 1.0 for "submerged" chambers (~55%), else 0.6 (lake) | 0.6 (lake) |
+| `fluid_level_spread` | fluid-level **cell** coordinates (16 × 40 × 16); level = `cellY*40+20 + quantize(spread*10, 3)` | steered to floor + 45% of height | steered to floor + 22% of height |
+| `lava` | fluid-type **cell** coordinates (64 × 40 × 64); \|v\| > 0.3 = lava where level ≤ −10 | 0 (always water) | 1 (lava) |
+
+Each 40-block fluid band can only reach ±10 blocks around its middle. A chamber spanning two bands therefore gets lakes at two levels, and the aquifer separates them with its own rock dams and spillways. That is where the interconnected water systems and natural waterfalls come from. Inside deep-dark regions vanilla never floods, so ancient cities stay dry.
+
+Placed springs and falls are vanilla `spring_water` / `spring_lava_overworld`, placed with `fantasyundergrounds:config_count`. That count is the per-chunk cap from config (`maxWaterSpringsPerChunk` = 4, `maxLavaSpringsPerChunk` = 2), and each attempt can still fail later filters. Vanilla's own spring features in each biome are untouched and not counted against this cap.
 
 ### 2.6 Structures
 * Caverns live inside `final_density`, so the vanilla beardifier keeps structure interiors solid and wrapped.
