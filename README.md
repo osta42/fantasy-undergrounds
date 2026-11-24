@@ -52,7 +52,7 @@ Inside lush caves, dripstone caves, the deep dark and other cave biomes (`#fanta
 ## Compatibility
 
 * **Ores:** this mod never removes, replaces or reorders any feature, including the ore step. Its own decoration only replaces base stone (`#fantasyundergrounds:replaceable_base`: stone, deepslate, tuff, granite, diorite, andesite) or air, and runs after the ores, so ores from any mod stay where their mod put them. Tested with **Occultism** and **Powah**: every ore is within ±15% of vanilla (see `reports/`).
-* **Biome mods:** see `reports/phase6-bop.md` for the measured result with **Biomes O' Plenty** (TerraBlender, GlitchCore).
+* **Biome mods:** tested with **Biomes O' Plenty** 26.2.0.0.28 (with TerraBlender and GlitchCore). All test gates pass against a vanilla + BoP baseline: ores within +0.4 … +7.8%, no slowdown, no worldgen warnings, BoP's biomes and blocks unchanged (`reports/phase6-bop.md`).
 * **Terrain mods (Tectonic, Terralith, Lithostitched): untested.** The mod rewrites the Overworld noise router by registry key, through one Mixin in `ChunkMap`. If a terrain mod's router no longer references the vanilla cave inputs, the mod falls back to adding its caverns on top of that terrain mod's own caves, and logs a warning.
 * **Mods that compile or replace density functions** (C2ME-style): untested.
 

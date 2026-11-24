@@ -223,3 +223,8 @@ Decisions made while the user was away, so they can be reviewed. Each is the mos
 * Stricter than vanilla structures: the piece only replaces air or base stone, and runs in `underground_decoration` (after ores, like the ancient city). Ores, fluids, other structures and other mods' blocks are never overwritten.
 * Placement `fantasyundergrounds:config_spread` extends vanilla random spread, so spacing (`ancientRuinSpacing`) and frequency come from the STARTUP config and `/locate structure` works. There is an exclusion zone around ancient cities, and ruins are skipped in the deep dark, Drowned and Infernal zones, and canyons.
 * Loot uses vanilla tables only: `chests/stronghold_corridor` (main chest) and `chests/simple_dungeon`. The ancient city table was not used, because it holds loot exclusive to ancient cities.
+
+### Phase 6: compatibility and polish
+* Config stamp (`FuConfigStamp`, `SavedData` in the overworld): §2.8 promised it, but it had not been implemented before this phase. It logs a warning when a world is opened with a different worldgen config, once per change.
+* Biomes O' Plenty 26.2.0.0.28 + TerraBlender + GlitchCore tested against a vanilla + BoP baseline: all gates pass (`reports/phase6-bop.md`). TerraBlender changes the biome source, not the noise router, so the rewrite stays in full mode.
+* Terrain mods (Tectonic, Terralith, Lithostitched) and density-compiling performance mods are still **untested**. None of them was in scope for the gates, and the fallback mode (§2.3) has not been exercised against a real terrain mod.

@@ -1,7 +1,5 @@
 # Overnight summary (Phases 2 re-check → 6)
 
-> Biomes O' Plenty results: pending (the run was still in progress when this draft was committed).
-
 All work ran in the cloud container (4 CPUs, Linux, OpenJDK 25.0.5.1). Every phase was gated against **vanilla baselines recorded on this machine** (`BASELINES.md`, cloud section), with Occultism and Powah loaded. No phase moved on until all of its gates passed.
 
 ## Gate results per phase
@@ -22,6 +20,21 @@ In every phase:
 * **Registration:** 0 problems.
 
 Reports: `reports/phase2-cloud*.md`, `phase3*.md`, `phase4*.md`, `phase5*.md`, `phase6*.md`, `phase6-bop*.md`.
+
+## Biomes O' Plenty compatibility (Phase 6)
+
+BoP 26.2.0.0.28, TerraBlender 26.2.0.0.2 and GlitchCore 26.2.0.0.0 were loaded together with Occultism and Powah. The mod was compared against a **vanilla + BoP** baseline on the same seed and region (`reports/phase6-bop.md`, `reports/phase6-bop-pregen.md`):
+
+* With BoP, the router rewrite still finds every vanilla cave input, so the mod runs in full mode, not fallback.
+* BoP content really generated in the region: about 504,000 BoP blocks across 42 block types (redwood and red-maple forests). With the mod it was 508,000 (+0.7%), so BoP's world above ground is preserved.
+* **All gates pass:**
+  * ores +0.4 … +7.8%;
+  * performance −2.7% (audit) and −3.0% (15,876-chunk pre-generation);
+  * 0 far-chunk warnings and 0 new exception signatures over 15,876 chunks;
+  * terrain hashes identical (0 / 256 chunks differ), purity 0 mismatches;
+  * the ancient city, trial chambers, stronghold and mineshaft intact (0.999–1.024 of vanilla);
+  * registration 0 problems across 135 biomes;
+  * the Ancient Depths ruin generates.
 
 ## Open item from before: closed
 
