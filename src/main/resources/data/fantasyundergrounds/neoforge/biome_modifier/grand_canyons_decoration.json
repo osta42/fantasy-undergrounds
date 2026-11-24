@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:canyon/strata",
+    "fantasyundergrounds:canyon/riverbed",
+    "fantasyundergrounds:canyon/glow_lichen"
+  ],
+  "step": "underground_decoration"
+}

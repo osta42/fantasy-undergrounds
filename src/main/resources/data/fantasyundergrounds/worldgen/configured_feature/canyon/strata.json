@@ -1,0 +1,40 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "fantasyundergrounds:y_bands",
+      "band_height": 3,
+      "states": [
+        {
+          "Name": "minecraft:granite"
+        },
+        {
+          "Name": "minecraft:terracotta"
+        },
+        {
+          "Name": "minecraft:dripstone_block"
+        },
+        {
+          "Name": "minecraft:calcite"
+        },
+        {
+          "Name": "minecraft:orange_terracotta"
+        },
+        {
+          "Name": "minecraft:tuff"
+        },
+        {
+          "Name": "minecraft:brown_terracotta"
+        },
+        {
+          "Name": "minecraft:granite"
+        }
+      ]
+    },
+    "radius": 7,
+    "depth": 2,
+    "chance": 0.85,
+    "exposure": "air",
+    "surface": "wall"
+  }
+}

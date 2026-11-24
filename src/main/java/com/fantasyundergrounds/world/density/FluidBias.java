@@ -1,5 +1,6 @@
 package com.fantasyundergrounds.world.density;
 
+import com.fantasyundergrounds.world.CanyonField;
 import com.fantasyundergrounds.world.Environment;
 import com.fantasyundergrounds.world.ZoneField;
 import com.mojang.serialization.MapCodec;
@@ -21,6 +22,17 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  *       applied only where the fluid level is at or below y=-10</li>
  * </ul>
  * Floodedness above 0.8 floods fully; 0.4-0.8 gives a lake at the spread-controlled level.
+ *
+ * <p>Grand Canyons get a river: inside the fluid band that can hold the river level the canyon
+ * is a lake steered to {@link CanyonField.Hit#riverLevel()}; everywhere else in the canyon it is
+ * forced dry, so a canyon never floods up to some other band's level. Rivers are always water.
+ * Drowned Abysses and Infernal Chasms take precedence where they overlap a canyon.
+ *
+ * <p>Lake mode is not a fixed value: within 64 blocks below a sea floor the aquifer lowers both
+ * flooding thresholds, and a fixed 0.6 would read as "fully flooded to sea level" there (a slab
+ * of sea water floating in the chamber). {@link #lakeValue} recomputes the aquifer's depth
+ * factor f from the same surface samples and returns 0.45 - 1.2 f, which lies between the
+ * partial (0.4 - 1.2 f) and full (0.8 - 1.1 f) thresholds for every f.
  */
 public final class FluidBias implements DensityFunction {
     public static final MapCodec<FluidBias> CODEC = MapCodec.unit(() -> {
@@ -33,11 +45,40 @@ public final class FluidBias implements DensityFunction {
     private final DensityFunction original;
     private final Mode mode;
     private final ZoneField zones;
+    private final CanyonField canyons;
+    private final DensityFunction surface;
+    private final int seaLevel;
 
-    public FluidBias(DensityFunction original, Mode mode, ZoneField zones) {
+    /** Chunk offsets the aquifer samples the preliminary surface at (Aquifer.SURFACE_SAMPLING_OFFSETS_IN_CHUNKS). */
+    private static final int[][] SURFACE_OFFSETS = {
+        {0, 0}, {-2, -1}, {-1, -1}, {0, -1}, {1, -1}, {-3, 0}, {-2, 0}, {-1, 0}, {1, 0}, {-2, 1}, {-1, 1}, {0, 1}, {1, 1}
+    };
+
+    public FluidBias(DensityFunction original, Mode mode, ZoneField zones, CanyonField canyons, DensityFunction surface, int seaLevel) {
         this.original = original;
         this.mode = mode;
         this.zones = zones;
+        this.canyons = canyons;
+        this.surface = surface;
+        this.seaLevel = seaLevel;
+    }
+
+    private int preliminarySurface(int x, int z) {
+        // Same quantisation as NoiseChunk.preliminarySurfaceLevel.
+        return (int) Math.floor(this.surface.compute(new SinglePointContext((x >> 2) << 2, 0, (z >> 2) << 2)));
+    }
+
+    /** Floodedness that the aquifer reads as a lake (never dry, never fully flooded) at this grid point. */
+    private double lakeValue(int x, int y, int z) {
+        if (preliminarySurface(x, z) + 8 >= this.seaLevel) {
+            return 0.45;
+        }
+        int lowest = Integer.MAX_VALUE;
+        for (int[] o : SURFACE_OFFSETS) {
+            lowest = Math.min(lowest, preliminarySurface(x + o[0] * 16, z + o[1] * 16));
+        }
+        double f = Math.max(0.0, Math.min(1.0, 1.0 - (lowest + 8 - y) / 64.0));
+        return 0.45 - 1.2 * f;
     }
 
     @Override
@@ -52,10 +93,20 @@ public final class FluidBias implements DensityFunction {
     private double floodedness(FunctionContext ctx) {
         ZoneField.Slot s = this.zones.sample(ctx.blockX(), ctx.blockY(), ctx.blockZ()).slot();
         return switch (s.env()) {
-            case DROWNED_ABYSSES -> s.submerged() ? 1.0 : 0.6;
-            case INFERNAL_CHASMS -> 0.6;
-            default -> this.original.compute(ctx);
+            case DROWNED_ABYSSES -> s.submerged() ? 1.0 : lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());
+            case INFERNAL_CHASMS -> lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());
+            default -> canyonFloodedness(ctx);
         };
+    }
+
+    private double canyonFloodedness(FunctionContext ctx) {
+        int y = ctx.blockY();
+        CanyonField.Hit h = this.canyons.nearest(ctx.blockX(), ctx.blockZ(), 16.0);
+        if (h == null || !h.near(16.0) || y < h.floorY() - 12 || y > h.topY() + 8) {
+            return this.original.compute(ctx);
+        }
+        int mid = Math.floorDiv(y, 40) * 40 + 20;
+        return Math.abs(h.riverLevel() - mid) <= 10.0 ? lakeValue(ctx.blockX(), y, ctx.blockZ()) : -1.0;
     }
 
     private double spread(FunctionContext ctx) {
@@ -64,6 +115,10 @@ public final class FluidBias implements DensityFunction {
         int mid = ctx.blockY() * 40 + 20;
         ZoneField.Slot s = lakeSlot(bx, mid, bz);
         if (s == null) {
+            CanyonField.Hit h = this.canyons.nearest(bx, bz, 16.0);
+            if (h != null && h.near(16.0) && Math.abs(h.riverLevel() - mid) <= 10.0) {
+                return Math.max(-1.0, Math.min(1.0, (h.riverLevel() - mid) / 10.0));
+            }
             return this.original.compute(ctx);
         }
         double target = s.env() == Environment.DROWNED_ABYSSES
@@ -94,7 +149,11 @@ public final class FluidBias implements DensityFunction {
             }
             drowned |= env == Environment.DROWNED_ABYSSES;
         }
-        return drowned ? 0.0 : this.original.compute(ctx);
+        if (drowned) {
+            return 0.0;
+        }
+        CanyonField.Hit h = this.canyons.nearest(bx, bz, 48.0);
+        return h != null && h.near(48.0) ? 0.0 : this.original.compute(ctx);
     }
 
     @Override
@@ -104,7 +163,7 @@ public final class FluidBias implements DensityFunction {
 
     @Override
     public DensityFunction mapChildren(Visitor visitor) {
-        return new FluidBias(visitor.apply(this.original), this.mode, this.zones);
+        return new FluidBias(visitor.apply(this.original), this.mode, this.zones, this.canyons, visitor.apply(this.surface), this.seaLevel);
     }
 
     @Override

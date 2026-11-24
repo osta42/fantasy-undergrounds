@@ -2,6 +2,7 @@ package com.fantasyundergrounds.world;
 
 import com.fantasyundergrounds.world.feature.PillarFeature;
 import com.fantasyundergrounds.world.feature.SkinFeature;
+import com.fantasyundergrounds.world.feature.YBandsProvider;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
@@ -40,12 +41,16 @@ public final class FeatureSelfTest {
             5, 1, 0.9F, SkinFeature.Exposure.LAVA, SkinFeature.Surface.ANY);
         SkinFeature.Config skinWater = new SkinFeature.Config(BlockStateProvider.simple(Blocks.GRAVEL),
             5, 2, 0.6F, SkinFeature.Exposure.WATER, SkinFeature.Surface.FLOOR);
+        SkinFeature.Config strata = new SkinFeature.Config(new YBandsProvider(java.util.List.of(
+            Blocks.GRANITE.defaultBlockState(), Blocks.CALCITE.defaultBlockState(), Blocks.TERRACOTTA.defaultBlockState()), 3),
+            6, 2, 0.85F, SkinFeature.Exposure.AIR, SkinFeature.Surface.WALL);
         PillarFeature.Config pillar = new PillarFeature.Config(BlockStateProvider.simple(Blocks.BLACKSTONE), UniformInt.of(2, 4), 48);
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("skin_air", check(seed, Fill.AIR, (l, r) -> SkinFeature.placeSkin(skinRock, l, r, new BlockPos(0, 6, 0))));
         out.put("skin_lava", check(seed, Fill.LAVA, (l, r) -> SkinFeature.placeSkin(skinLava, l, r, new BlockPos(0, -6, 0))));
         out.put("skin_water", check(seed, Fill.WATER, (l, r) -> SkinFeature.placeSkin(skinWater, l, r, new BlockPos(0, -6, 0))));
+        out.put("skin_strata", check(seed, Fill.AIR, (l, r) -> SkinFeature.placeSkin(strata, l, r, new BlockPos(9, 0, 0))));
         out.put("pillar", check(seed, Fill.AIR, (l, r) -> PillarFeature.placePillar(pillar, l, r, new BlockPos(0, -9, 0))));
         return out;
     }

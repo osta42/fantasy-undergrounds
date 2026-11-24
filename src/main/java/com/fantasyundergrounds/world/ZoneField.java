@@ -20,6 +20,7 @@ public final class ZoneField {
     private static final long SALT_DEEP = 0xBB67AE8584CAA73BL;
     private static final long SALT_SHALLOW = 0x3C6EF372FE94F82BL;
     private static final long SALT_PARAMS = 0xA54FF53A5F1D36F1L;
+    private static final long SALT_ISLANDS = 0x510E527FADE682D1L;
 
     /** Default per-slot environment chances. Order matches {@link #CAVERN_ENVS}. */
     private static final Environment[] CAVERN_ENVS = {
@@ -37,6 +38,7 @@ public final class ZoneField {
     private final FuNoise warpZ;
     private final double[] deepCdf;
     private final double[] shallowCdf;
+    private final double islandChance;
 
     public ZoneField(long seed, FuSettings settings) {
         this.seed = seed;
@@ -47,6 +49,7 @@ public final class ZoneField {
         this.warpZ = new FuNoise(seed, 0x51A8L, 2);
         this.deepCdf = cdf(DEEP_CHANCE, settings);
         this.shallowCdf = cdf(SHALLOW_CHANCE, settings);
+        this.islandChance = Math.min(1.0, 0.5 * settings.frequency(Environment.FLOATING_ISLANDS));
     }
 
     private static double[] cdf(double[] base, FuSettings s) {
@@ -87,9 +90,10 @@ public final class ZoneField {
         boolean bridge,
         double bridgeOffset,
         double radius,
-        long hash
+        long hash,
+        int islands
     ) {
-        static final Slot EMPTY = new Slot(Environment.ORDINARY, 0, 0, false, 0, false, 0, 0, 0);
+        static final Slot EMPTY = new Slot(Environment.ORDINARY, 0, 0, false, 0, false, 0, 0, 0, 0);
 
         public boolean isCavern() {
             return this.env != Environment.ORDINARY;
@@ -249,6 +253,15 @@ public final class ZoneField {
         double bridgeOffset = (r6 - 0.5) * height * 0.4;
         // Footprint radius in cell units. Drowned Abysses are wider: enormous underground lakes.
         double radius = giant ? 0.62 : (env == Environment.DROWNED_ABYSSES ? 0.40 + 0.15 * r6 : 0.30 + 0.14 * r6);
-        return new Slot(env, centerY, height, giant, pillarChance, bridge, bridgeOffset, radius, p);
+        // Floating Stone Islands: only in tall deep Grand Caverns (>= 60 blocks), from a separate
+        // hash so every other chamber parameter stays exactly as before.
+        int islands = 0;
+        if (env == Environment.GRAND_CAVERNS && deep && height >= 60 && this.islandChance > 0) {
+            long ih = Hash.cell(this.seed, SALT_ISLANDS, cx, 0, cz);
+            if (Hash.unit(ih) < this.islandChance) {
+                islands = 1 + (int) (Hash.unit(Hash.fmix(ih)) * 3.0) + (giant ? 1 : 0);
+            }
+        }
+        return new Slot(env, centerY, height, giant, pillarChance, bridge, bridgeOffset, radius, p, islands);
     }
 }

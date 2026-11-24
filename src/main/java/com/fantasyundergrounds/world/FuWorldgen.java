@@ -12,12 +12,24 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 /** Entry points shared by the Mixin, density functions and placement filters. */
 public final class FuWorldgen {
     private static final Map<Long, ZoneField> ZONES = new ConcurrentHashMap<>();
+    private static final Map<Long, CanyonField> CANYONS = new ConcurrentHashMap<>();
+    private static final Map<Long, IslandField> ISLANDS = new ConcurrentHashMap<>();
 
     private FuWorldgen() {}
 
     /** The one zone field per world seed; density and decoration both use it. */
     public static ZoneField zones(long seed) {
         return ZONES.computeIfAbsent(seed, s -> new ZoneField(s, FuSettings.get()));
+    }
+
+    /** The one canyon field per world seed. */
+    public static CanyonField canyons(long seed) {
+        return CANYONS.computeIfAbsent(seed, s -> new CanyonField(s, FuSettings.get()));
+    }
+
+    /** Island geometry per world seed (stateless apart from its noises). */
+    public static IslandField islands(long seed) {
+        return ISLANDS.computeIfAbsent(seed, IslandField::new);
     }
 
     public static boolean appliesTo(ResourceKey<Level> dimension) {

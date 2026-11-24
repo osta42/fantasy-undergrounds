@@ -1,6 +1,8 @@
 package com.fantasyundergrounds;
 
+import com.fantasyundergrounds.world.CanyonField;
 import com.fantasyundergrounds.world.Environment;
+import com.fantasyundergrounds.world.IslandField;
 import com.fantasyundergrounds.world.FuWorldgen;
 import com.fantasyundergrounds.world.ZoneField;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -59,6 +61,14 @@ public final class FuCommands {
             s.cellX(), s.cellZ(), slot.env().getSerializedName(), slot.giant() ? " (giant)" : "",
             slot.centerY(), slot.height(), s.mergedWithNeighbour() ? ", merged with neighbour" : "",
             slot.bridge() ? ", has bridges" : "")), false);
+        if (slot.islands() > 0) {
+            src.sendSuccess(() -> Component.literal(slot.islands() + " floating islands in this chamber"), false);
+        }
+        CanyonField.Hit h = FuWorldgen.canyons(src.getLevel().getSeed()).nearest(p.x, p.z, 0.0);
+        if (h != null) {
+            src.sendSuccess(() -> Component.literal(String.format("Grand Canyon: floor y=%.0f, top y=%.0f, river level y=%.0f, %d cliff levels",
+                h.floorY(), h.topY(), h.riverLevel(), h.canyon().levels())), false);
+        }
         return 1;
     }
 
@@ -76,6 +86,9 @@ public final class FuCommands {
         ServerLevel level = src.getLevel();
         ZoneField zones = FuWorldgen.zones(level.getSeed());
         Vec3 p = src.getPosition();
+        if (env == Environment.GRAND_CANYONS) {
+            return locateCanyon(src, FuWorldgen.canyons(level.getSeed()), p);
+        }
         int bx = (int) Math.floor(p.x / zones.cellSize());
         int bz = (int) Math.floor(p.z / zones.cellSize());
         for (int r = 0; r <= SEARCH_CELLS; r++) {
@@ -87,12 +100,24 @@ public final class FuCommands {
                         continue;
                     }
                     ZoneField.Column col = zones.column(bx + dx, bz + dz);
-                    ZoneField.Slot slot = col.deep().env() == env ? col.deep() : (col.shallow().env() == env ? col.shallow() : null);
+                    ZoneField.Slot slot;
+                    if (env == Environment.FLOATING_ISLANDS) {
+                        slot = col.deep().islands() > 0 ? col.deep() : null;
+                    } else {
+                        slot = col.deep().env() == env ? col.deep() : (col.shallow().env() == env ? col.shallow() : null);
+                    }
                     if (slot == null) {
                         continue;
                     }
                     double[] c = zones.cellPoint(bx + dx, bz + dz);
-                    double[] found = refine(zones, env, c[0], slot.centerY(), c[1]);
+                    double[] found;
+                    if (env == Environment.FLOATING_ISLANDS) {
+                        // Island 0, approximately (its offset is in warped space; the warp is <= ~55 blocks).
+                        IslandField.Island is = IslandField.island(slot, zones.cellSize(), 0);
+                        found = new double[] {c[0] + is.ox(), is.topY() + 2, c[1] + is.oz()};
+                    } else {
+                        found = refine(zones, env, c[0], slot.centerY(), c[1]);
+                    }
                     if (found == null) {
                         continue;
                     }
@@ -112,6 +137,48 @@ public final class FuCommands {
             }
         }
         src.sendFailure(Component.literal("No " + name + " within " + (int) (SEARCH_CELLS * zones.cellSize()) + " blocks."));
+        return 0;
+    }
+
+    private static int locateCanyon(CommandSourceStack src, CanyonField canyons, Vec3 p) {
+        int bx = (int) Math.floor(p.x / canyons.cellSize());
+        int bz = (int) Math.floor(p.z / canyons.cellSize());
+        int rings = (int) Math.ceil(SEARCH_CELLS * 192.0 / canyons.cellSize());
+        for (int r = 0; r <= rings; r++) {
+            CanyonField.Canyon best = null;
+            double bestDist = Double.MAX_VALUE;
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+                        continue;
+                    }
+                    CanyonField.Canyon c = canyons.canyon(bx + dx, bz + dz);
+                    if (c == null) {
+                        continue;
+                    }
+                    double d = Math.hypot(c.cx() - p.x, c.cz() - p.z);
+                    if (d < bestDist) {
+                        bestDist = d;
+                        best = c;
+                    }
+                }
+            }
+            if (best != null) {
+                CanyonField.Hit h = canyons.nearest(best.cx(), best.cz(), 64.0);
+                // Step across to the meandering centre line at the canyon's middle.
+                double x = best.cx(), z = best.cz(), y = best.floorY() + 6;
+                if (h != null) {
+                    x -= h.dv() * -best.az();
+                    z -= h.dv() * best.ax();
+                    y = h.riverLevel() + 3;
+                }
+                int ix = (int) x, iy = (int) y, iz = (int) z, dist = (int) bestDist;
+                src.sendSuccess(() -> Component.literal(String.format(
+                    "Nearest grand_canyons: %d %d %d (about %d blocks away). /tp @s %d %d %d", ix, iy, iz, dist, ix, iy, iz)), false);
+                return 1;
+            }
+        }
+        src.sendFailure(Component.literal("No grand_canyons within " + (int) (rings * canyons.cellSize()) + " blocks."));
         return 0;
     }
 

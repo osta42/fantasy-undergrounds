@@ -2,6 +2,7 @@ package com.fantasyundergrounds.world.density;
 
 import com.fantasyundergrounds.FantasyUndergrounds;
 import com.fantasyundergrounds.config.FuSettings;
+import com.fantasyundergrounds.world.CanyonField;
 import com.fantasyundergrounds.world.FuWorldgen;
 import com.fantasyundergrounds.world.ZoneField;
 import java.util.Optional;
@@ -21,7 +22,7 @@ import net.minecraft.world.level.levelgen.synth.NormalNoise;
  * vanilla cave inputs:
  *
  * <pre>
- *   noise minecraft:cave_cheese                      -> caverns - 0.27   (vanilla adds 0.27 back)
+ *   noise minecraft:cave_cheese                      -> min(caverns, canyons) - 0.27   (vanilla adds 0.27 back)
  *   noise minecraft:cave_layer                       -> 0
  *   minecraft:overworld/caves/spaghetti_2d           -> tunnels (+ surface guard)
  *   minecraft:overworld/caves/spaghetti_roughness... -> 0
@@ -63,6 +64,7 @@ public final class RouterRewriter {
     public static Result rewrite(NoiseGeneratorSettings settings, long seed, String dimension) {
         FuSettings s = FuSettings.get();
         ZoneField zones = FuWorldgen.zones(seed);
+        CanyonField canyons = FuWorldgen.canyons(seed);
         NoiseRouter router = settings.noiseRouter();
 
         // Surface guard shared by caverns and tunnels: stay at least N blocks under the
@@ -70,7 +72,9 @@ public final class RouterRewriter {
         // based on terrain density, not on absolute depth).
         DensityFunction y = DensityFunctions.yClampedGradient(-2048, 2048, -2048.0, 2048.0);
         DensityFunction surface = DensityFunctions.flatCache(router.preliminarySurfaceLevel());
-        DensityFunction caverns = guard(new CavernDensity(zones), y, surface, 22.0);
+        // Zone caverns and Grand Canyons share the cave_cheese slot: one open field, one guard.
+        DensityFunction caverns = guard(DensityFunctions.min(new CavernDensity(zones),
+            new CanyonDensity(canyons, seed, s.minY(), s.maxY())), y, surface, 22.0);
         DensityFunction tunnels = guard(new TunnelDensity(seed, s), y, surface, 12.0);
 
         // Vanilla's "entrances" input also carries vanilla 3D spaghetti tunnels everywhere
@@ -96,9 +100,9 @@ public final class RouterRewriter {
         // Aquifer inputs: Drowned Abysses flood, Infernal Chasms get lava lakes (PLAN.md 2.5).
         NoiseRouter out = new NoiseRouter(
             router.barrierNoise(),
-            new FluidBias(router.fluidLevelFloodednessNoise(), FluidBias.Mode.FLOODEDNESS, zones),
-            new FluidBias(router.fluidLevelSpreadNoise(), FluidBias.Mode.SPREAD, zones),
-            new FluidBias(router.lavaNoise(), FluidBias.Mode.LAVA, zones),
+            new FluidBias(router.fluidLevelFloodednessNoise(), FluidBias.Mode.FLOODEDNESS, zones, canyons, router.preliminarySurfaceLevel(), settings.seaLevel()),
+            new FluidBias(router.fluidLevelSpreadNoise(), FluidBias.Mode.SPREAD, zones, canyons, router.preliminarySurfaceLevel(), settings.seaLevel()),
+            new FluidBias(router.lavaNoise(), FluidBias.Mode.LAVA, zones, canyons, router.preliminarySurfaceLevel(), settings.seaLevel()),
             router.temperature(),
             router.vegetation(),
             router.continents(),

@@ -15,7 +15,7 @@ import net.neoforged.neoforge.common.Tags;
 
 /**
  * Cross-section PNGs of the audit region for eyeballing cave shapes: horizontal slices at fixed
- * Y levels (1 px = 1 block) and one vertical X/Y cut through the region centre.
+ * Y levels (1 px = 1 block) and two vertical cuts through the region centre (X/Y and Z/Y).
  */
 final class SliceImages {
     static final int[] LEVELS = {-50, -35, -20, -5, 10, 25, 40};
@@ -26,19 +26,23 @@ final class SliceImages {
     private final int minBlockZ;
     private final int size;
     private final int cutZ;
+    private final int cutX;
     private final BufferedImage[] horizontal;
     private final BufferedImage vertical;
+    private final BufferedImage verticalZ;
 
     SliceImages(int minChunkX, int minChunkZ, int chunks) {
         this.minBlockX = minChunkX * 16;
         this.minBlockZ = minChunkZ * 16;
         this.size = chunks * 16;
         this.cutZ = this.minBlockZ + this.size / 2;
+        this.cutX = this.minBlockX + this.size / 2;
         this.horizontal = new BufferedImage[LEVELS.length];
         for (int i = 0; i < LEVELS.length; i++) {
             this.horizontal[i] = new BufferedImage(this.size, this.size, BufferedImage.TYPE_INT_RGB);
         }
         this.vertical = new BufferedImage(this.size, V_MAX - V_MIN, BufferedImage.TYPE_INT_RGB);
+        this.verticalZ = new BufferedImage(this.size, V_MAX - V_MIN, BufferedImage.TYPE_INT_RGB);
     }
 
     void record(LevelChunk chunk) {
@@ -56,6 +60,7 @@ final class SliceImages {
                 }
             }
         }
+        recordZ(chunk, p, x0, z0);
         if (this.cutZ >= z0 && this.cutZ < z0 + 16) {
             for (int dx = 0; dx < 16; dx++) {
                 int px = x0 + dx - this.minBlockX;
@@ -69,12 +74,28 @@ final class SliceImages {
         }
     }
 
+    private void recordZ(LevelChunk chunk, BlockPos.MutableBlockPos p, int x0, int z0) {
+        if (this.cutX < x0 || this.cutX >= x0 + 16) {
+            return;
+        }
+        for (int dz = 0; dz < 16; dz++) {
+            int pz = z0 + dz - this.minBlockZ;
+            if (pz < 0 || pz >= this.size) {
+                continue;
+            }
+            for (int y = V_MIN; y < V_MAX; y++) {
+                this.verticalZ.setRGB(pz, V_MAX - 1 - y, color(chunk.getBlockState(p.set(this.cutX, y, z0 + dz))));
+            }
+        }
+    }
+
     void write(Path dir, String label) throws IOException {
         Files.createDirectories(dir);
         for (int i = 0; i < LEVELS.length; i++) {
             ImageIO.write(this.horizontal[i], "png", dir.resolve(label + "-y" + LEVELS[i] + ".png").toFile());
         }
         ImageIO.write(this.vertical, "png", dir.resolve(label + "-vertical.png").toFile());
+        ImageIO.write(this.verticalZ, "png", dir.resolve(label + "-verticalz.png").toFile());
     }
 
     private static int color(BlockState s) {

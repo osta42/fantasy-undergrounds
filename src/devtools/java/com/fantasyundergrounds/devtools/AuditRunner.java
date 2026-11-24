@@ -172,11 +172,12 @@ final class AuditRunner {
             out.put("structures", StructureProbe.run(level, origin, this.config.structureSearchRadius()));
         }
         if (ModList.get().isLoaded("fantasyundergrounds")) {
-            // Exercise the operator commands from world origin (also gives coordinates for
-            // in-game checks). Output goes to the server log.
-            for (String env : new String[] {"grand_caverns", "drowned_abysses", "infernal_chasms", "crystal_hollows"}) {
+            // Exercise the operator commands from the region centre (also gives coordinates for
+            // in-game checks, and shows whether rare environments fall inside the audited region).
+            for (String env : new String[] {"grand_caverns", "drowned_abysses", "infernal_chasms", "crystal_hollows", "grand_canyons", "floating_islands"}) {
                 this.server.getCommands().performPrefixedCommand(this.server.createCommandSourceStack(),
-                    "execute in minecraft:overworld positioned 0 0 0 run fantasyundergrounds locate " + env);
+                    "execute in minecraft:overworld positioned " + (this.config.centerX() * 16 + 8) + " 0 " + (this.config.centerZ() * 16 + 8)
+                        + " run fantasyundergrounds locate " + env);
             }
         }
         if (ModList.get().isLoaded("fantasyundergrounds") && !this.config.estimateOnly()) {

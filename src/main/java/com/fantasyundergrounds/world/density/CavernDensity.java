@@ -3,6 +3,7 @@ package com.fantasyundergrounds.world.density;
 import com.fantasyundergrounds.world.Environment;
 import com.fantasyundergrounds.world.FuNoise;
 import com.fantasyundergrounds.world.Hash;
+import com.fantasyundergrounds.world.IslandField;
 import com.fantasyundergrounds.world.ZoneField;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.util.KeyDispatchDataCodec;
@@ -24,6 +25,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  *   <li>detail: warped 3D fBm for irregular walls and ceilings</li>
  *   <li>pillars: sparse 2D cellular columns, hourglass-shaped (wider at floor and ceiling)</li>
  *   <li>bridges: ridged-noise paths of rock crossing tall Grand Caverns</li>
+ *   <li>floating islands: rock blobs in the tallest Grand Caverns ({@link IslandField})</li>
  * </ul>
  */
 public final class CavernDensity implements DensityFunction.SimpleFunction {
@@ -43,6 +45,7 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
     private final FuNoise detail;
     private final FuNoise detailWarp;
     private final FuNoise bridgePath;
+    private final IslandField islands;
     private final int minY;
     private final int maxY;
 
@@ -55,6 +58,7 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         this.detail = new FuNoise(seed, 0xC4L, 3);
         this.detailWarp = new FuNoise(seed, 0xC5L, 2);
         this.bridgePath = new FuNoise(seed, 0xC6L, 2);
+        this.islands = new IslandField(seed);
         this.minY = zones.settings().minY();
         this.maxY = zones.settings().maxY();
     }
@@ -126,6 +130,11 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         // Natural bridges across tall Grand Caverns.
         if (slot.bridge()) {
             d = Math.max(d, bridge(x, y, z, slot));
+        }
+        // Floating Stone Islands in the tallest Grand Caverns.
+        if (slot.islands() > 0) {
+            double c = this.zones.cellSize();
+            d = Math.max(d, this.islands.density(slot, c, s.dx() * c, s.dz() * c, x, y, z));
         }
 
         // Global vertical envelope (configurable minimum/maximum depth).
