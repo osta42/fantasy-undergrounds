@@ -99,7 +99,12 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         double inside = clamp01(-wall);
 
         // Vertical profile: dome towards the walls, irregular floor and ceiling.
-        double domeSqrt = Math.sqrt(clamp01(inside * (slot.env() == Environment.INFERNAL_CHASMS ? 5.0 : 1.6)));
+        double domeK = switch (slot.env()) {
+            case INFERNAL_CHASMS -> 5.0;
+            case CRYSTAL_HOLLOWS -> 0.9;   // rounder, geode-like
+            default -> 1.6;
+        };
+        double domeSqrt = Math.sqrt(clamp01(inside * domeK));
         double floorN = this.floorNoise.sample2d(x / 90.0, z / 90.0);
         // Terraced floor: smooth steps of ~6 blocks give ledges and multiple floor levels.
         double terr = floorN * height * 0.22;
@@ -110,6 +115,8 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
             case DROWNED_ABYSSES -> floorY -= terr * 0.6 + inside * height * 0.25;
             // Deep vertical drops: a V-shaped trench along the rift's axis.
             case INFERNAL_CHASMS -> floorY -= inside * inside * height * 0.45;
+            // Broad, nearly level floors for trees and giant mushrooms.
+            case UNDERGROUND_FORESTS -> floorY -= terr * 0.75;
             default -> { }
         }
         double ceilY = slot.ceilY() - (1.0 - domeSqrt) * height * 0.45
@@ -121,7 +128,7 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         // Irregular rock surfaces: domain-warped 3D fBm.
         double wx = x + 14.0 * this.detailWarp.sample(x / 40.0, y / 40.0, z / 40.0);
         double wz = z + 14.0 * this.detailWarp.sample(z / 40.0 + 31.7, y / 40.0, x / 40.0);
-        d += 0.38 * this.detail.sample(wx / 26.0, y / 18.0, wz / 26.0);
+        d += (slot.env() == Environment.CRYSTAL_HOLLOWS ? 0.55 : 0.38) * this.detail.sample(wx / 26.0, y / 18.0, wz / 26.0);
 
         // Giant pillars (rock re-added inside the chamber).
         if (slot.pillarChance() > 0) {

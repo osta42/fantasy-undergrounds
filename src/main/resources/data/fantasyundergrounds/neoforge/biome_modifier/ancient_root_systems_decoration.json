@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:roots/rooted_ceiling",
+    "fantasyundergrounds:roots/floor_soil",
+    "fantasyundergrounds:roots/giant_roots",
+    "fantasyundergrounds:roots/hanging_roots",
+    "fantasyundergrounds:roots/glow_lichen"
+  ],
+  "step": "underground_decoration"
+}

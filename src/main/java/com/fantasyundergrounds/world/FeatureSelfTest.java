@@ -1,6 +1,8 @@
 package com.fantasyundergrounds.world;
 
+import com.fantasyundergrounds.world.feature.CrystalFeature;
 import com.fantasyundergrounds.world.feature.PillarFeature;
+import com.fantasyundergrounds.world.feature.RootFeature;
 import com.fantasyundergrounds.world.feature.SkinFeature;
 import com.fantasyundergrounds.world.feature.YBandsProvider;
 import java.lang.reflect.InvocationHandler;
@@ -44,6 +46,11 @@ public final class FeatureSelfTest {
         SkinFeature.Config strata = new SkinFeature.Config(new YBandsProvider(java.util.List.of(
             Blocks.GRANITE.defaultBlockState(), Blocks.CALCITE.defaultBlockState(), Blocks.TERRACOTTA.defaultBlockState()), 3),
             6, 2, 0.85F, SkinFeature.Exposure.AIR, SkinFeature.Surface.WALL);
+        CrystalFeature.Config crystal = new CrystalFeature.Config(BlockStateProvider.simple(Blocks.AMETHYST_BLOCK),
+            BlockStateProvider.simple(Blocks.AMETHYST_CLUSTER), UniformInt.of(4, 12), UniformInt.of(1, 3), 0.2F);
+        RootFeature.Config root = new RootFeature.Config(BlockStateProvider.simple(Blocks.DARK_OAK_WOOD),
+            BlockStateProvider.simple(Blocks.MANGROVE_ROOTS), BlockStateProvider.simple(Blocks.HANGING_ROOTS),
+            UniformInt.of(12, 32), UniformInt.of(1, 3), 0.35F);
         PillarFeature.Config pillar = new PillarFeature.Config(BlockStateProvider.simple(Blocks.BLACKSTONE), UniformInt.of(2, 4), 48);
 
         Map<String, Object> out = new LinkedHashMap<>();
@@ -51,6 +58,8 @@ public final class FeatureSelfTest {
         out.put("skin_lava", check(seed, Fill.LAVA, (l, r) -> SkinFeature.placeSkin(skinLava, l, r, new BlockPos(0, -6, 0))));
         out.put("skin_water", check(seed, Fill.WATER, (l, r) -> SkinFeature.placeSkin(skinWater, l, r, new BlockPos(0, -6, 0))));
         out.put("skin_strata", check(seed, Fill.AIR, (l, r) -> SkinFeature.placeSkin(strata, l, r, new BlockPos(9, 0, 0))));
+        out.put("crystal", check(seed, Fill.AIR, (l, r) -> CrystalFeature.placeCrystal(crystal, l, r, new BlockPos(0, -9, 0))));
+        out.put("root", check(seed, Fill.AIR, (l, r) -> RootFeature.placeRoot(root, l, r, new BlockPos(0, 9, 0))));
         out.put("pillar", check(seed, Fill.AIR, (l, r) -> PillarFeature.placePillar(pillar, l, r, new BlockPos(0, -9, 0))));
         return out;
     }

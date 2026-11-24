@@ -174,7 +174,7 @@ final class AuditRunner {
         if (ModList.get().isLoaded("fantasyundergrounds")) {
             // Exercise the operator commands from the region centre (also gives coordinates for
             // in-game checks, and shows whether rare environments fall inside the audited region).
-            for (String env : new String[] {"grand_caverns", "drowned_abysses", "infernal_chasms", "crystal_hollows", "grand_canyons", "floating_islands"}) {
+            for (String env : new String[] {"grand_caverns", "drowned_abysses", "infernal_chasms", "crystal_hollows", "grand_canyons", "floating_islands", "underground_forests", "ancient_root_systems"}) {
                 this.server.getCommands().performPrefixedCommand(this.server.createCommandSourceStack(),
                     "execute in minecraft:overworld positioned " + (this.config.centerX() * 16 + 8) + " 0 " + (this.config.centerZ() * 16 + 8)
                         + " run fantasyundergrounds locate " + env);

@@ -5,7 +5,9 @@ import com.fantasyundergrounds.world.density.CanyonDensity;
 import com.fantasyundergrounds.world.density.CavernDensity;
 import com.fantasyundergrounds.world.density.TunnelDensity;
 import com.fantasyundergrounds.world.density.FluidBias;
+import com.fantasyundergrounds.world.feature.CrystalFeature;
 import com.fantasyundergrounds.world.feature.PillarFeature;
+import com.fantasyundergrounds.world.feature.RootFeature;
 import com.fantasyundergrounds.world.feature.SkinFeature;
 import com.fantasyundergrounds.world.feature.YBandsProvider;
 import com.fantasyundergrounds.world.placement.ConfigCountPlacement;
@@ -45,6 +47,8 @@ public final class FuRegistries {
 
     public static final Supplier<SkinFeature> SKIN = FEATURES.register("skin", () -> new SkinFeature(SkinFeature.Config.CODEC));
     public static final Supplier<PillarFeature> PILLAR = FEATURES.register("pillar", () -> new PillarFeature(PillarFeature.Config.CODEC));
+    public static final Supplier<CrystalFeature> CRYSTAL = FEATURES.register("crystal", () -> new CrystalFeature(CrystalFeature.Config.CODEC));
+    public static final Supplier<RootFeature> ROOT = FEATURES.register("root", () -> new RootFeature(RootFeature.Config.CODEC));
     public static final Supplier<BlockStateProviderType<YBandsProvider>> Y_BANDS =
         STATE_PROVIDERS.register("y_bands", () -> new BlockStateProviderType<>(YBandsProvider.CODEC));
     public static final Supplier<PlacementModifierType<ConfigCountPlacement>> CONFIG_COUNT =

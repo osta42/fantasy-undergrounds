@@ -1,0 +1,14 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:forest/azalea_trees",
+    "fantasyundergrounds:forest/oak_trees",
+    "fantasyundergrounds:forest/red_mushrooms",
+    "fantasyundergrounds:forest/brown_mushrooms",
+    "fantasyundergrounds:forest/moss_vegetation",
+    "fantasyundergrounds:forest/cave_vines",
+    "fantasyundergrounds:forest/spore_blossoms"
+  ],
+  "step": "vegetal_decoration"
+}

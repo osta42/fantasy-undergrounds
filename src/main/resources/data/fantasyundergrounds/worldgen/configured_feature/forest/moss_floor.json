@@ -1,0 +1,16 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:moss_block"
+      }
+    },
+    "radius": 7,
+    "depth": 2,
+    "chance": 0.9,
+    "exposure": "air",
+    "surface": "floor"
+  }
+}

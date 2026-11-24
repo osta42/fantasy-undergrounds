@@ -1,0 +1,39 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:coarse_dirt"
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "minecraft:rooted_dirt"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "minecraft:podzol"
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "minecraft:moss_block"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "radius": 6,
+    "depth": 1,
+    "chance": 0.75,
+    "exposure": "air",
+    "surface": "floor"
+  }
+}

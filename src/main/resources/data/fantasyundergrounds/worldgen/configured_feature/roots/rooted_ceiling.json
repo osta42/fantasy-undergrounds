@@ -1,0 +1,16 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:rooted_dirt"
+      }
+    },
+    "radius": 6,
+    "depth": 2,
+    "chance": 0.8,
+    "exposure": "air",
+    "surface": "ceiling"
+  }
+}

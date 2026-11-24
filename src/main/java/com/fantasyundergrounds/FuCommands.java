@@ -5,12 +5,15 @@ import com.fantasyundergrounds.world.Environment;
 import com.fantasyundergrounds.world.IslandField;
 import com.fantasyundergrounds.world.FuWorldgen;
 import com.fantasyundergrounds.world.ZoneField;
+import com.fantasyundergrounds.world.placement.InZoneFilter;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.Arrays;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
@@ -20,7 +23,8 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * Operator-only helpers for modpack makers and testing:
  * <ul>
  *   <li>{@code /fantasyundergrounds zone} - environment and chamber parameters at your position</li>
- *   <li>{@code /fantasyundergrounds locate <environment>} - nearest chamber of that environment</li>
+ *   <li>{@code /fantasyundergrounds locate <environment>} - nearest chamber of that environment, skipping
+ *       chambers inside cave biomes that keep their own decoration (lush caves, dripstone caves, deep dark)</li>
  * </ul>
  * Read-only: they never modify the world.
  */
@@ -89,6 +93,7 @@ public final class FuCommands {
         if (env == Environment.GRAND_CANYONS) {
             return locateCanyon(src, FuWorldgen.canyons(level.getSeed()), p);
         }
+        DensityFunction terrain = level.getChunkSource().randomState().router().finalDensity();
         int bx = (int) Math.floor(p.x / zones.cellSize());
         int bz = (int) Math.floor(p.z / zones.cellSize());
         for (int r = 0; r <= SEARCH_CELLS; r++) {
@@ -116,9 +121,11 @@ public final class FuCommands {
                         IslandField.Island is = IslandField.island(slot, zones.cellSize(), 0);
                         found = new double[] {c[0] + is.ox(), is.topY() + 2, c[1] + is.oz()};
                     } else {
-                        found = refine(zones, env, c[0], slot.centerY(), c[1]);
+                        found = refine(zones, terrain, env, c[0], slot.centerY(), c[1]);
                     }
-                    if (found == null) {
+                    // Skip zones inside cave biomes that keep their own decoration (lush caves,
+                    // dripstone caves, deep dark...): there the zone only changes the cave's shape.
+                    if (found == null || level.getBiome(BlockPos.containing(found[0], found[1], found[2])).is(InZoneFilter.KEEPS_OWN_DECORATION)) {
                         continue;
                     }
                     double d = Math.hypot(found[0] - p.x, found[2] - p.z);
@@ -182,13 +189,25 @@ public final class FuCommands {
         return 0;
     }
 
-    /** The cell point is in warped space; search around it for a position that really is in the zone. */
-    private static double[] refine(ZoneField zones, Environment env, double x, double y, double z) {
-        for (int r = 0; r <= 96; r += 8) {
-            for (int dx = -r; dx <= r; dx += 8) {
-                for (int dz = -r; dz <= r; dz += 8) {
-                    if (zones.sample(x + dx, y, z + dz).slot().env() == env) {
-                        return new double[] {x + dx, y, z + dz};
+    /**
+     * The cell point is in warped space; search around it for a position that really is in the
+     * zone AND open in the level's final terrain density (which includes vanilla's top slide and
+     * this mod's surface guard, so chambers sealed under shallow ground are skipped), at the
+     * chamber's centre height first, then a little above and below it.
+     */
+    private static double[] refine(ZoneField zones, DensityFunction terrain, Environment env, double x, double y, double z) {
+        for (int dy : new int[] {0, -6, 6, -12, 12}) {
+            for (int r = 0; r <= 112; r += 8) {
+                for (int dx = -r; dx <= r; dx += 8) {
+                    for (int dz = -r; dz <= r; dz += 8) {
+                        if (Math.max(Math.abs(dx), Math.abs(dz)) != r) {
+                            continue;
+                        }
+                        double px = x + dx, py = y + dy, pz = z + dz;
+                        if (zones.sample(px, py, pz).slot().env() == env
+                            && terrain.compute(new DensityFunction.SinglePointContext((int) px, (int) py, (int) pz)) < -0.05) {
+                            return new double[] {px, py, pz};
+                        }
                     }
                 }
             }

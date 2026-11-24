@@ -1,0 +1,51 @@
+{
+  "type": "fantasyundergrounds:crystal",
+  "config": {
+    "core": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:amethyst_block"
+      }
+    },
+    "buds": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:amethyst_cluster"
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "minecraft:large_amethyst_bud"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "minecraft:medium_amethyst_bud"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "minecraft:small_amethyst_bud"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "length": {
+      "type": "minecraft:uniform",
+      "min_inclusive": 4,
+      "max_inclusive": 12
+    },
+    "radius": {
+      "type": "minecraft:uniform",
+      "min_inclusive": 1,
+      "max_inclusive": 3
+    },
+    "bud_chance": 0.18
+  }
+}

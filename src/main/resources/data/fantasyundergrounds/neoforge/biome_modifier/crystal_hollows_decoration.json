@@ -1,0 +1,12 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:crystal/calcite_shell",
+    "fantasyundergrounds:crystal/amethyst_lining",
+    "fantasyundergrounds:crystal/floor_spires",
+    "fantasyundergrounds:crystal/ceiling_spires",
+    "fantasyundergrounds:crystal/glow_lichen"
+  ],
+  "step": "underground_decoration"
+}

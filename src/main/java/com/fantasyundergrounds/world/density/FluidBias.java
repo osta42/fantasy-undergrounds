@@ -152,8 +152,9 @@ public final class FluidBias implements DensityFunction {
         if (drowned) {
             return 0.0;
         }
+        // Only the fluid band that holds the river: lava lakes above or below a canyon stay vanilla.
         CanyonField.Hit h = this.canyons.nearest(bx, bz, 48.0);
-        return h != null && h.near(48.0) ? 0.0 : this.original.compute(ctx);
+        return h != null && h.near(48.0) && Math.abs(h.riverLevel() - mid) <= 10.0 ? 0.0 : this.original.compute(ctx);
     }
 
     @Override

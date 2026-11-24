@@ -1,0 +1,27 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:amethyst_block"
+          },
+          "weight": 12
+        },
+        {
+          "data": {
+            "Name": "minecraft:budding_amethyst"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "radius": 5,
+    "depth": 1,
+    "chance": 0.6,
+    "exposure": "air",
+    "surface": "any"
+  }
+}
