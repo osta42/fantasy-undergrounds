@@ -1,0 +1,7 @@
+{
+  "type": "fantasyundergrounds:ancient_ruins",
+  "biomes": "#fantasyundergrounds:has_structure/ancient_ruins",
+  "step": "underground_decoration",
+  "terrain_adaptation": "beard_box",
+  "spawn_overrides": {}
+}

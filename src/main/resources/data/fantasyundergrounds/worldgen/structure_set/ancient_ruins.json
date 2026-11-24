@@ -1,0 +1,17 @@
+{
+  "placement": {
+    "type": "fantasyundergrounds:config_spread",
+    "salt": 1736024331,
+    "frequency": 1.0,
+    "exclusion_zone": {
+      "other_set": "minecraft:ancient_cities",
+      "chunk_count": 6
+    }
+  },
+  "structures": [
+    {
+      "structure": "fantasyundergrounds:ancient_ruins",
+      "weight": 1
+    }
+  ]
+}

@@ -277,6 +277,17 @@ def main():
         for r in rows:
             w(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | {r[5]} | {fmt(r[6], 3) if r[6] is not None else 'n/a'} | {'PASS' if r[7] else 'FAIL'} |")
 
+    # This mod's own structures (only in the candidate): reported, not gated against vanilla.
+    extra = {k: v for k, v in cand.get("structures", {}).items() if k not in base.get("structures", {})}
+    if extra:
+        w("\n## Structures added by the candidate (informational)\n")
+        w("| structure | found | position | pieces | structure blocks | most common blocks |\n|---|:-:|---|---:|---:|---|")
+        for name, c in extra.items():
+            top = sorted(c.get("structureBlocks", {}).items(), key=lambda kv: -kv[1])[:5]
+            top_txt = ", ".join(k.split(":")[-1] + " " + str(v) for k, v in top)
+            ok_found = bool(c.get("found")) and bool(c.get("startValid"))
+            w(f"| {name} | {ok_found} | {c.get('pos')} | {c.get('pieces', 0)} | {c.get('structureBlockTotal', 0)} | {top_txt} |")
+
     # Gate 7 - registration
     if "registry" in base and "registry" in cand:
         ok, problems, removed_carvers = registry_gate(base, cand)

@@ -55,6 +55,16 @@ public final class FuSelfTest {
         out.put("mismatches", mismatches.get());
         out.put("configFingerprint", s.fingerprint());
         out.put("phase3", phase3Coverage(seed, freshZones, new CanyonField(seed, s)));
+        // Ancient Depths ruin layouts (Phase 5): census per layout, and the same twice.
+        Map<String, Object> ruins = new LinkedHashMap<>();
+        boolean ruinsDeterministic = true;
+        for (int v = 0; v < com.fantasyundergrounds.world.structure.AncientRuinsPiece.VARIANTS; v++) {
+            Map<String, Integer> a = com.fantasyundergrounds.world.structure.AncientRuinsPiece.census(v, seed + v);
+            ruinsDeterministic &= a.equals(com.fantasyundergrounds.world.structure.AncientRuinsPiece.census(v, seed + v));
+            ruins.put("layout" + v, a);
+        }
+        ruins.put("deterministic", ruinsDeterministic);
+        out.put("ruinLayouts", ruins);
         out.put("features", FeatureSelfTest.run(seed));
         return out;
     }

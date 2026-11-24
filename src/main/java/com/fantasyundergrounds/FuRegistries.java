@@ -12,6 +12,9 @@ import com.fantasyundergrounds.world.feature.SkinFeature;
 import com.fantasyundergrounds.world.feature.YBandsProvider;
 import com.fantasyundergrounds.world.placement.ConfigCountPlacement;
 import com.fantasyundergrounds.world.placement.InZoneFilter;
+import com.fantasyundergrounds.world.structure.AncientRuinsPiece;
+import com.fantasyundergrounds.world.structure.AncientRuinsStructure;
+import com.fantasyundergrounds.world.structure.ConfigSpreadPlacement;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import com.mojang.serialization.MapCodec;
 import java.util.function.Supplier;
@@ -19,6 +22,9 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProviderType;
 import net.minecraft.world.level.levelgen.placement.PlacementModifierType;
+import net.minecraft.world.level.levelgen.structure.StructureType;
+import net.minecraft.world.level.levelgen.structure.pieces.StructurePieceType;
+import net.minecraft.world.level.levelgen.structure.placement.StructurePlacementType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.common.world.BiomeModifier;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -34,6 +40,12 @@ public final class FuRegistries {
         DeferredRegister.create(Registries.FEATURE, FantasyUndergrounds.MODID);
     private static final DeferredRegister<BlockStateProviderType<?>> STATE_PROVIDERS =
         DeferredRegister.create(Registries.BLOCK_STATE_PROVIDER_TYPE, FantasyUndergrounds.MODID);
+    private static final DeferredRegister<StructureType<?>> STRUCTURE_TYPES =
+        DeferredRegister.create(Registries.STRUCTURE_TYPE, FantasyUndergrounds.MODID);
+    private static final DeferredRegister<StructurePieceType> STRUCTURE_PIECES =
+        DeferredRegister.create(Registries.STRUCTURE_PIECE, FantasyUndergrounds.MODID);
+    private static final DeferredRegister<StructurePlacementType<?>> STRUCTURE_PLACEMENTS =
+        DeferredRegister.create(Registries.STRUCTURE_PLACEMENT, FantasyUndergrounds.MODID);
     private static final DeferredRegister<MapCodec<? extends BiomeModifier>> BIOME_MODIFIERS =
         DeferredRegister.create(NeoForgeRegistries.Keys.BIOME_MODIFIER_SERIALIZERS, FantasyUndergrounds.MODID);
 
@@ -51,6 +63,13 @@ public final class FuRegistries {
     public static final Supplier<RootFeature> ROOT = FEATURES.register("root", () -> new RootFeature(RootFeature.Config.CODEC));
     public static final Supplier<BlockStateProviderType<YBandsProvider>> Y_BANDS =
         STATE_PROVIDERS.register("y_bands", () -> new BlockStateProviderType<>(YBandsProvider.CODEC));
+    // Ancient Depths ruins (Phase 5).
+    public static final Supplier<StructureType<AncientRuinsStructure>> ANCIENT_RUINS =
+        STRUCTURE_TYPES.register("ancient_ruins", () -> () -> AncientRuinsStructure.CODEC);
+    public static final Supplier<StructurePieceType> ANCIENT_RUINS_PIECE =
+        STRUCTURE_PIECES.register("ancient_ruins", () -> (StructurePieceType.ContextlessType) AncientRuinsPiece::new);
+    public static final Supplier<StructurePlacementType<ConfigSpreadPlacement>> CONFIG_SPREAD =
+        STRUCTURE_PLACEMENTS.register("config_spread", () -> () -> ConfigSpreadPlacement.CODEC);
     public static final Supplier<PlacementModifierType<ConfigCountPlacement>> CONFIG_COUNT =
         PLACEMENT_TYPES.register("config_count", () -> () -> ConfigCountPlacement.CODEC);
 
@@ -64,6 +83,9 @@ public final class FuRegistries {
         PLACEMENT_TYPES.register(modBus);
         FEATURES.register(modBus);
         STATE_PROVIDERS.register(modBus);
+        STRUCTURE_TYPES.register(modBus);
+        STRUCTURE_PIECES.register(modBus);
+        STRUCTURE_PLACEMENTS.register(modBus);
         BIOME_MODIFIERS.register(modBus);
     }
 

@@ -93,6 +93,10 @@ public final class FuCommands {
         if (env == Environment.GRAND_CANYONS) {
             return locateCanyon(src, FuWorldgen.canyons(level.getSeed()), p);
         }
+        if (env == Environment.ANCIENT_RUINS) {
+            src.sendFailure(Component.literal("Ancient Depths ruins are a structure: use /locate structure fantasyundergrounds:ancient_ruins"));
+            return 0;
+        }
         DensityFunction terrain = level.getChunkSource().randomState().router().finalDensity();
         int bx = (int) Math.floor(p.x / zones.cellSize());
         int bz = (int) Math.floor(p.z / zones.cellSize());

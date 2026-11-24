@@ -29,18 +29,26 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
  * run on the same seed tells us whether caverns cut into the structure.
  */
 final class StructureProbe {
-    static final String[] REQUIRED = {"ancient_city", "trial_chambers", "stronghold", "mineshaft"};
+    static final String[] REQUIRED = {"minecraft:ancient_city", "minecraft:trial_chambers", "minecraft:stronghold", "minecraft:mineshaft"};
+    /** Probed when registered (this mod's own structures); reported, not compared against vanilla. */
+    static final String[] OPTIONAL = {"fantasyundergrounds:ancient_ruins"};
 
     private StructureProbe() {}
 
     static Map<String, Object> run(ServerLevel level, BlockPos origin, int searchRadius) {
         Map<String, Object> out = new LinkedHashMap<>();
         var registry = level.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-        for (String name : REQUIRED) {
+        java.util.List<String> names = new java.util.ArrayList<>(java.util.List.of(REQUIRED));
+        for (String opt : OPTIONAL) {
+            if (registry.get(ResourceKey.create(Registries.STRUCTURE, Identifier.parse(opt))).isPresent()) {
+                names.add(opt);
+            }
+        }
+        for (String name : names) {
             Map<String, Object> entry = new LinkedHashMap<>();
-            out.put("minecraft:" + name, entry);
+            out.put(name, entry);
             try {
-                Holder<Structure> holder = registry.getOrThrow(ResourceKey.create(Registries.STRUCTURE, Identifier.withDefaultNamespace(name)));
+                Holder<Structure> holder = registry.getOrThrow(ResourceKey.create(Registries.STRUCTURE, Identifier.parse(name)));
                 long t0 = System.nanoTime();
                 Pair<BlockPos, Holder<Structure>> found = level.getChunkSource().getGenerator()
                     .findNearestMapStructure(level, HolderSet.direct(holder), origin, searchRadius, false);
