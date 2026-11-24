@@ -43,3 +43,5 @@ build-setup.log
 runs/
 __pycache__/
 reports-*.out
+*.out
+*.log
