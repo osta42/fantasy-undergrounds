@@ -97,9 +97,24 @@ public final class FuCommands {
             src.sendFailure(Component.literal("Ancient Depths ruins are a structure: use /locate structure fantasyundergrounds:ancient_ruins"));
             return 0;
         }
+        double[] best = nearestZone(level, env, p.x, p.z);
+        if (best != null) {
+            int x = (int) best[0], y = (int) best[1], z = (int) best[2];
+            int dist = (int) Math.hypot(best[0] - p.x, best[2] - p.z);
+            src.sendSuccess(() -> Component.literal(String.format(
+                "Nearest %s: %d %d %d (about %d blocks away). /tp @s %d %d %d", name, x, y, z, dist, x, y, z)), false);
+            return 1;
+        }
+        src.sendFailure(Component.literal("No " + name + " within " + (int) (SEARCH_CELLS * zones.cellSize()) + " blocks."));
+        return 0;
+    }
+
+    /** Nearest open position in a zone of {@code env} (or a floating island), or null within the search range. */
+    static double[] nearestZone(ServerLevel level, Environment env, double px, double pz) {
+        ZoneField zones = FuWorldgen.zones(level.getSeed());
         DensityFunction terrain = level.getChunkSource().randomState().router().finalDensity();
-        int bx = (int) Math.floor(p.x / zones.cellSize());
-        int bz = (int) Math.floor(p.z / zones.cellSize());
+        int bx = (int) Math.floor(px / zones.cellSize());
+        int bz = (int) Math.floor(pz / zones.cellSize());
         for (int r = 0; r <= SEARCH_CELLS; r++) {
             double bestDist = Double.MAX_VALUE;
             double[] best = null;
@@ -132,7 +147,7 @@ public final class FuCommands {
                     if (found == null || level.getBiome(BlockPos.containing(found[0], found[1], found[2])).is(InZoneFilter.KEEPS_OWN_DECORATION)) {
                         continue;
                     }
-                    double d = Math.hypot(found[0] - p.x, found[2] - p.z);
+                    double d = Math.hypot(found[0] - px, found[2] - pz);
                     if (d < bestDist) {
                         bestDist = d;
                         best = found;
@@ -140,22 +155,33 @@ public final class FuCommands {
                 }
             }
             if (best != null) {
-                int x = (int) best[0], y = (int) best[1], z = (int) best[2];
-                int dist = (int) bestDist;
-                src.sendSuccess(() -> Component.literal(String.format(
-                    "Nearest %s: %d %d %d (about %d blocks away). /tp @s %d %d %d", name, x, y, z, dist, x, y, z)), false);
-                return 1;
+                return best;
             }
         }
-        src.sendFailure(Component.literal("No " + name + " within " + (int) (SEARCH_CELLS * zones.cellSize()) + " blocks."));
-        return 0;
+        return null;
     }
 
     private static int locateCanyon(CommandSourceStack src, CanyonField canyons, Vec3 p) {
-        int bx = (int) Math.floor(p.x / canyons.cellSize());
-        int bz = (int) Math.floor(p.z / canyons.cellSize());
-        int rings = (int) Math.ceil(SEARCH_CELLS * 192.0 / canyons.cellSize());
-        for (int r = 0; r <= rings; r++) {
+        double[] c = nearestCanyon(canyons, p.x, p.z);
+        if (c == null) {
+            src.sendFailure(Component.literal("No grand_canyons within " + (int) (canyonRings(canyons) * canyons.cellSize()) + " blocks."));
+            return 0;
+        }
+        int ix = (int) c[0], iy = (int) c[1], iz = (int) c[2], dist = (int) Math.hypot(c[0] - p.x, c[2] - p.z);
+        src.sendSuccess(() -> Component.literal(String.format(
+            "Nearest grand_canyons: %d %d %d (about %d blocks away). /tp @s %d %d %d", ix, iy, iz, dist, ix, iy, iz)), false);
+        return 1;
+    }
+
+    private static int canyonRings(CanyonField canyons) {
+        return (int) Math.ceil(SEARCH_CELLS * 192.0 / canyons.cellSize());
+    }
+
+    /** A point on the centre line in the middle of the nearest canyon, just above its river, or null. */
+    static double[] nearestCanyon(CanyonField canyons, double px, double pz) {
+        int bx = (int) Math.floor(px / canyons.cellSize());
+        int bz = (int) Math.floor(pz / canyons.cellSize());
+        for (int r = 0; r <= canyonRings(canyons); r++) {
             CanyonField.Canyon best = null;
             double bestDist = Double.MAX_VALUE;
             for (int dx = -r; dx <= r; dx++) {
@@ -167,7 +193,7 @@ public final class FuCommands {
                     if (c == null) {
                         continue;
                     }
-                    double d = Math.hypot(c.cx() - p.x, c.cz() - p.z);
+                    double d = Math.hypot(c.cx() - px, c.cz() - pz);
                     if (d < bestDist) {
                         bestDist = d;
                         best = c;
@@ -176,21 +202,30 @@ public final class FuCommands {
             }
             if (best != null) {
                 CanyonField.Hit h = canyons.nearest(best.cx(), best.cz(), 64.0);
-                // Step across to the meandering centre line at the canyon's middle.
                 double x = best.cx(), z = best.cz(), y = best.floorY() + 6;
                 if (h != null) {
-                    x -= h.dv() * -best.az();
+                    // Step across to the meandering centre line.
+                    x += h.dv() * best.az();
                     z -= h.dv() * best.ax();
                     y = h.riverLevel() + 3;
                 }
-                int ix = (int) x, iy = (int) y, iz = (int) z, dist = (int) bestDist;
-                src.sendSuccess(() -> Component.literal(String.format(
-                    "Nearest grand_canyons: %d %d %d (about %d blocks away). /tp @s %d %d %d", ix, iy, iz, dist, ix, iy, iz)), false);
-                return 1;
+                return new double[] {x, y, z, Math.toDegrees(Math.atan2(-best.ax(), best.az()))};
             }
         }
-        src.sendFailure(Component.literal("No grand_canyons within " + (int) (rings * canyons.cellSize()) + " blocks."));
-        return 0;
+        return null;
+    }
+
+    /**
+     * Tooling entry point (dev screenshot tour, other mods): nearest open position of an
+     * environment from (x, z), as {x, y, z} (canyons add a 4th value, the canyon's heading as a
+     * Minecraft yaw), or null. Read-only.
+     */
+    public static double[] nearestOpen(ServerLevel level, String environment, double x, double z) {
+        Environment env = Arrays.stream(Environment.values()).filter(e -> e.getSerializedName().equals(environment)).findFirst().orElse(null);
+        if (env == null || env == Environment.ORDINARY || env == Environment.ANCIENT_RUINS || !FuWorldgen.appliesTo(level.dimension())) {
+            return null;
+        }
+        return env == Environment.GRAND_CANYONS ? nearestCanyon(FuWorldgen.canyons(level.getSeed()), x, z) : nearestZone(level, env, x, z);
     }
 
     /**

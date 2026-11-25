@@ -121,6 +121,16 @@ neoForge {
             logLevel = org.slf4j.event.Level.INFO
         }
 
+        // Dev-only screenshot tour (devtools ShotTour): a client that quick-plays into
+        // runs/shots/saves/fu-shots and follows runs/shots/fu-shots.properties.
+        shotsClient {
+            client()
+            gameDirectory = project.file('runs/shots')
+            loadedMods = [mods."${mod_id}", mods.fudevtools]
+            programArguments.addAll '--quickPlaySingleplayer', 'fu-shots', '--width', '1600', '--height', '900'
+            jvmArguments.addAll '-Xmx4G', '-Xms1G'
+        }
+
         // applies to all the run configs above
         configureEach {
             // Recommended logging data for a userdev environment
