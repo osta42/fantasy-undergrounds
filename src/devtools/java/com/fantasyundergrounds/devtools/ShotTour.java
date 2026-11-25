@@ -46,6 +46,7 @@ public final class ShotTour {
     private static int phase;
     private static int ticks;
     private static int worldTicks;
+    private static int stable;
     private static CompletableFuture<double[]> pending;
     private static String pendingSpec;
 
@@ -105,13 +106,24 @@ public final class ShotTour {
             case 0 -> {
                 command(server, String.format(java.util.Locale.ROOT, "tp @a %.2f %.2f %.2f %.1f %.1f", s.x(), s.y(), s.z(), s.yaw(), s.pitch()));
                 ticks = 0;
+                stable = 0;
                 phase = 1;
             }
             case 1 -> {
-                // Let chunks generate, arrive and compile; then a short settle for lighting.
+                // Ready when the teleport has arrived, every chunk within 3 of the player is
+                // loaded, and the render queue has stayed empty for 2 seconds.
                 ticks++;
-                boolean ready = ticks > 80 && mc.levelRenderer.hasRenderedAllSections();
-                if (ready || ticks > 1600) {
+                boolean arrived = mc.player.distanceToSqr(s.x(), s.y(), s.z()) < 4.0;
+                boolean chunksIn = arrived;
+                int pcx = mc.player.blockPosition().getX() >> 4, pcz = mc.player.blockPosition().getZ() >> 4;
+                for (int dx = -3; dx <= 3 && chunksIn; dx++) {
+                    for (int dz = -3; dz <= 3 && chunksIn; dz++) {
+                        chunksIn = mc.level.getChunkSource().hasChunk(pcx + dx, pcz + dz);
+                    }
+                }
+                stable = chunksIn && mc.levelRenderer.hasRenderedAllSections() ? stable + 1 : 0;
+                boolean ready = ticks > 60 && stable > 40;
+                if (ready || ticks > 2400) {
                     FuDevTools.LOGGER.info("[fu-shots] {} ready after {} ticks (all sections rendered: {})", s.name(), ticks,
                         mc.levelRenderer.hasRenderedAllSections());
                     ticks = 0;
