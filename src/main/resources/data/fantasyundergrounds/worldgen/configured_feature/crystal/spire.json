@@ -2,10 +2,21 @@
   "type": "fantasyundergrounds:crystal",
   "config": {
     "core": {
-      "type": "minecraft:simple_state_provider",
-      "state": {
-        "Name": "minecraft:amethyst_block"
-      }
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:amethyst_block"
+          },
+          "weight": 14
+        },
+        {
+          "data": {
+            "Name": "minecraft:pearlescent_froglight"
+          },
+          "weight": 1
+        }
+      ]
     },
     "buds": {
       "type": "minecraft:weighted_state_provider",
@@ -33,6 +44,12 @@
             "Name": "minecraft:small_amethyst_bud"
           },
           "weight": 1
+        },
+        {
+          "data": {
+            "Name": "minecraft:end_rod"
+          },
+          "weight": 2
         }
       ]
     },

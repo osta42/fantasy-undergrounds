@@ -6,7 +6,8 @@
     "fantasyundergrounds:infernal/basalt_columns",
     "fantasyundergrounds:infernal/basalt_skin",
     "fantasyundergrounds:infernal/obsidian_crust",
-    "fantasyundergrounds:infernal/magma_floor"
+    "fantasyundergrounds:infernal/magma_floor",
+    "fantasyundergrounds:infernal/crying_veins"
   ],
   "step": "underground_decoration"
 }

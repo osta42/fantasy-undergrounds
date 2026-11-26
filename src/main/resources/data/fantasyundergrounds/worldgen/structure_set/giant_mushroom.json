@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 49120711,
+    "spacing": 4,
+    "separation": 1
+  },
+  "structures": [
+    {
+      "structure": "fantasyundergrounds:giant_mushroom",
+      "weight": 1
+    }
+  ]
+}

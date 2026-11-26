@@ -15,6 +15,8 @@ import com.fantasyundergrounds.world.placement.InZoneFilter;
 import com.fantasyundergrounds.world.structure.AncientRuinsPiece;
 import com.fantasyundergrounds.world.structure.AncientRuinsStructure;
 import com.fantasyundergrounds.world.structure.ConfigSpreadPlacement;
+import com.fantasyundergrounds.world.structure.FormationPiece;
+import com.fantasyundergrounds.world.structure.FormationStructure;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import com.mojang.serialization.MapCodec;
 import java.util.function.Supplier;
@@ -68,6 +70,11 @@ public final class FuRegistries {
         STRUCTURE_TYPES.register("ancient_ruins", () -> () -> AncientRuinsStructure.CODEC);
     public static final Supplier<StructurePieceType> ANCIENT_RUINS_PIECE =
         STRUCTURE_PIECES.register("ancient_ruins", () -> (StructurePieceType.ContextlessType) AncientRuinsPiece::new);
+    // Giant formations (fantasy pass): mushrooms, crystals, roots, spires.
+    public static final Supplier<StructureType<FormationStructure>> FORMATION =
+        STRUCTURE_TYPES.register("formation", () -> () -> FormationStructure.CODEC);
+    public static final Supplier<StructurePieceType> FORMATION_PIECE =
+        STRUCTURE_PIECES.register("formation", () -> (StructurePieceType.ContextlessType) FormationPiece::new);
     public static final Supplier<StructurePlacementType<ConfigSpreadPlacement>> CONFIG_SPREAD =
         STRUCTURE_PLACEMENTS.register("config_spread", () -> () -> ConfigSpreadPlacement.CODEC);
     public static final Supplier<PlacementModifierType<ConfigCountPlacement>> CONFIG_COUNT =

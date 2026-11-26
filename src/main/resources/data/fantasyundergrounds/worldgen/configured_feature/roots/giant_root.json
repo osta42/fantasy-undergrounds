@@ -46,6 +46,13 @@
       "min_inclusive": 1,
       "max_inclusive": 3
     },
-    "hanging_chance": 0.35
+    "hanging_chance": 0.35,
+    "node": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:verdant_froglight"
+      }
+    },
+    "node_chance": 0.03
   }
 }

@@ -1,0 +1,40 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "fantasyundergrounds:y_bands",
+      "band_height": 4,
+      "states": [
+        {
+          "Name": "minecraft:stone"
+        },
+        {
+          "Name": "minecraft:andesite"
+        },
+        {
+          "Name": "minecraft:tuff"
+        },
+        {
+          "Name": "minecraft:calcite"
+        },
+        {
+          "Name": "minecraft:stone"
+        },
+        {
+          "Name": "minecraft:dripstone_block"
+        },
+        {
+          "Name": "minecraft:granite"
+        },
+        {
+          "Name": "minecraft:smooth_basalt"
+        }
+      ]
+    },
+    "radius": 7,
+    "depth": 2,
+    "chance": 0.7,
+    "exposure": "air",
+    "surface": "wall"
+  }
+}

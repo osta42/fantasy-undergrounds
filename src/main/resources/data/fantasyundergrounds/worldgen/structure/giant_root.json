@@ -1,0 +1,8 @@
+{
+  "type": "fantasyundergrounds:formation",
+  "kind": "giant_root",
+  "biomes": "#fantasyundergrounds:has_structure/formations",
+  "step": "underground_decoration",
+  "terrain_adaptation": "none",
+  "spawn_overrides": {}
+}

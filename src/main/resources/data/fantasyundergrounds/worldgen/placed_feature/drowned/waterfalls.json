@@ -24,7 +24,9 @@
       "type": "fantasyundergrounds:in_zone",
       "environments": [
         "drowned_abysses",
-        "grand_caverns"
+        "underground_forests",
+        "grand_canyons",
+        "floating_islands"
       ]
     },
     {

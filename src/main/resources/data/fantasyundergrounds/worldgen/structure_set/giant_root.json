@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 61730457,
+    "spacing": 5,
+    "separation": 2
+  },
+  "structures": [
+    {
+      "structure": "fantasyundergrounds:giant_root",
+      "weight": 1
+    }
+  ]
+}

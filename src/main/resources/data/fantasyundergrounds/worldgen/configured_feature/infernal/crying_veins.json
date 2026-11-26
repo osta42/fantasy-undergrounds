@@ -1,0 +1,27 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:obsidian"
+          },
+          "weight": 3
+        },
+        {
+          "data": {
+            "Name": "minecraft:crying_obsidian"
+          },
+          "weight": 2
+        }
+      ]
+    },
+    "radius": 3,
+    "depth": 1,
+    "chance": 0.45,
+    "exposure": "air",
+    "surface": "any"
+  }
+}

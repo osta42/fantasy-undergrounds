@@ -94,9 +94,9 @@ public final class FuConfig {
 
         b.comment("Placed springs and falls. Large lakes and lava seas come from the aquifer and are not capped here.").push("fluids");
         MAX_WATER_SPRINGS = b.comment("Maximum placed water springs/falls per chunk.")
-            .defineInRange("maxWaterSpringsPerChunk", 4, 0, 64);
+            .defineInRange("maxWaterSpringsPerChunk", 6, 0, 64);
         MAX_LAVA_SPRINGS = b.comment("Maximum placed lava springs/falls per chunk.")
-            .defineInRange("maxLavaSpringsPerChunk", 2, 0, 64);
+            .defineInRange("maxLavaSpringsPerChunk", 4, 0, 64);
         b.pop();
 
         SPEC = b.build();

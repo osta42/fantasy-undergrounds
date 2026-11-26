@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.levelgen.DensityFunction;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -28,9 +29,9 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
  * <p>Shot lines ({@code shot.NN}, processed in key order):
  * <pre>
  *   pos|name|x|y|z|yaw|pitch
- *   env|environment|fromX|fromZ|yaw1,yaw2,...|pitch    (nearest open spot of a Fantasy Undergrounds
- *                                                     environment; for grand_canyons the yaws are
- *                                                     relative to the canyon's heading)
+ *   env|environment|fromX|fromZ|yaw1,yaw2,...|pitch[|look]   (nearest open spot of a Fantasy
+ *       Undergrounds environment, moved to the most open viewpoint nearby; yaws are relative to
+ *       the longest sightline, or to the direction of the found spot in "look" mode)
  * </pre>
  * Environments are resolved through {@code com.fantasyundergrounds.FuCommands#nearestOpen} by
  * reflection, so this dev mod keeps no compile-time dependency on the cave mod.
@@ -40,6 +41,7 @@ public final class ShotTour {
     private record Shot(String name, double x, double y, double z, float yaw, float pitch) {}
 
     private static List<String> specs;
+    private static final Properties options = new Properties();
     private static final List<Shot> SHOTS = new ArrayList<>();
     private static int specIndex;
     private static int shotIndex;
@@ -63,9 +65,12 @@ public final class ShotTour {
         }
         IntegratedServer server = mc.getSingleplayerServer();
         if (++worldTicks == 60) {
-            for (String cmd : new String[] {"gamemode spectator @a", "effect give @a minecraft:night_vision infinite 0 true",
-                "time set 6000", "weather clear", "gamerule doDaylightCycle false"}) {
+            for (String cmd : new String[] {"gamemode spectator @a", "time set 6000", "weather clear"}) {
                 command(server, cmd);
+            }
+            // nightvision=false shows the caves with their own light only.
+            if (!"false".equals(options.getProperty("nightvision"))) {
+                command(server, "effect give @a minecraft:night_vision infinite 0 true");
             }
             if (!mc.gui.hud.isHidden()) {
                 mc.gui.hud.toggle();
@@ -97,7 +102,11 @@ public final class ShotTour {
                 SHOTS.add(new Shot(f[1], d(f[2]), d(f[3]), d(f[4]), (float) d(f[5]), (float) d(f[6])));
             } else if (f[0].equals("env")) {
                 pendingSpec = spec;
-                pending = server.submit(() -> nearestOpen(server.overworld(), f[1], d(f[2]), d(f[3])));
+                boolean look = f.length > 6 && f[6].equals("look");
+                pending = server.submit(() -> {
+                    double[] base = nearestOpen(server.overworld(), f[1], d(f[2]), d(f[3]));
+                    return base == null ? null : viewpoint(server.overworld(), base, look);
+                });
             }
             return;
         }
@@ -161,6 +170,62 @@ public final class ShotTour {
         }
     }
 
+    /**
+     * Best camera position near {@code base}, judged on the level's final terrain density: open
+     * at the camera and with the longest sightlines (8 horizontal rays). Returns {x, y, z, yaw}
+     * facing along the longest sightline. In {@code look} mode the camera sits on a ring 30-50
+     * blocks out and faces the base point (e.g. a floating island).
+     */
+    private static double[] viewpoint(ServerLevel level, double[] base, boolean look) {
+        DensityFunction f = level.getChunkSource().randomState().router().finalDensity();
+        double bestScore = -1;
+        double[] best = new double[] {base[0], base[1], base[2], base.length > 3 ? base[3] : 0.0};
+        for (int dy = 0; dy <= 18; dy += 6) {
+            for (int dx = -60; dx <= 60; dx += 12) {
+                for (int dz = -60; dz <= 60; dz += 12) {
+                    double ring = Math.hypot(dx, dz);
+                    if (look && (ring < 30 || ring > 52)) {
+                        continue;
+                    }
+                    double px = base[0] + dx, py = base[1] + dy, pz = base[2] + dz;
+                    if (open(f, px, py, pz) > -0.2 || open(f, px, py - 3, pz) > 0) {
+                        continue;
+                    }
+                    double score = 0, bestLen = -1, bestYaw = 0;
+                    for (int k = 0; k < 8; k++) {
+                        double yaw = k * 45.0;
+                        double ddx = -Math.sin(Math.toRadians(yaw)), ddz = Math.cos(Math.toRadians(yaw));
+                        int len = 0;
+                        for (int step = 3; step <= 90; step += 3) {
+                            if (open(f, px + ddx * step, py, pz + ddz * step) > 0) {
+                                break;
+                            }
+                            len = step;
+                        }
+                        score += len;
+                        if (len > bestLen) {
+                            bestLen = len;
+                            bestYaw = yaw;
+                        }
+                    }
+                    if (look) {
+                        bestYaw = Math.toDegrees(Math.atan2(-(base[0] - px), base[2] - pz));
+                        score = 1000 - Math.abs(ring - 40) + score * 0.01;
+                    }
+                    if (score > bestScore) {
+                        bestScore = score;
+                        best = new double[] {px, py, pz, bestYaw};
+                    }
+                }
+            }
+        }
+        return best;
+    }
+
+    private static double open(DensityFunction f, double x, double y, double z) {
+        return f.compute(new DensityFunction.SinglePointContext((int) Math.floor(x), (int) Math.floor(y), (int) Math.floor(z)));
+    }
+
     private static double[] nearestOpen(ServerLevel level, String env, double x, double z) {
         try {
             Method m = Class.forName("com.fantasyundergrounds.FuCommands")
@@ -187,6 +252,7 @@ public final class ShotTour {
         Properties p = new Properties();
         try (Reader r = Files.newBufferedReader(file)) {
             p.load(r);
+            options.putAll(p);
         } catch (IOException e) {
             FuDevTools.LOGGER.error("[fu-shots] cannot read {}", file, e);
             return List.of();

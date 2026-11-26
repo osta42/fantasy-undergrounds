@@ -1,0 +1,33 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "data": {
+            "Name": "minecraft:ochre_froglight"
+          },
+          "weight": 2
+        },
+        {
+          "data": {
+            "Name": "minecraft:pearlescent_froglight"
+          },
+          "weight": 1
+        },
+        {
+          "data": {
+            "Name": "minecraft:verdant_froglight"
+          },
+          "weight": 1
+        }
+      ]
+    },
+    "radius": 3,
+    "depth": 1,
+    "chance": 0.3,
+    "exposure": "air",
+    "surface": "any"
+  }
+}

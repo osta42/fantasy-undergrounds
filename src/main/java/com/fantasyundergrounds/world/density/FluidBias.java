@@ -91,6 +91,12 @@ public final class FluidBias implements DensityFunction {
     }
 
     private double floodedness(FunctionContext ctx) {
+        // Inside a canyon's own outline the canyon decides (river band lake, dry above), even where
+        // it crosses a zone, so the gorge keeps its river and stays open.
+        CanyonField.Hit ch = this.canyons.nearest(ctx.blockX(), ctx.blockZ(), 0.0);
+        if (ch != null && ch.near(0.0) && ctx.blockY() >= ch.floorY() - 6 && ctx.blockY() <= ch.topY() + 4) {
+            return canyonFloodedness(ctx);
+        }
         ZoneField.Slot s = this.zones.sample(ctx.blockX(), ctx.blockY(), ctx.blockZ()).slot();
         return switch (s.env()) {
             case DROWNED_ABYSSES -> s.submerged() ? 1.0 : lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());

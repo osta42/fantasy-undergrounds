@@ -21,21 +21,30 @@ import net.minecraft.world.level.levelgen.feature.stateproviders.BlockStateProvi
  * {@code fantasyundergrounds:root}: a giant root (Ancient Root Systems). It starts at a ceiling
  * just above the origin and winds downwards, thinning as it goes, until it reaches the floor or
  * its length runs out. Each step is a small sphere: a {@code core} (wood) wrapped in a
- * {@code shell} (roots); {@code hanging} blocks (hanging roots) dangle under the core.
+ * {@code shell} (roots); {@code hanging} blocks (hanging roots) dangle under the core. Optional
+ * {@code node} blocks (e.g. a froglight) replace a share {@code node_chance} of the shell.
  *
  * <p>Only open space (air, water, lava) is ever replaced, so it cannot overwrite ores or any
  * other block (PLAN.md 2.4). Total reach stays under 16 blocks horizontally from the origin.
  */
 public final class RootFeature extends Feature<RootFeature.Config> {
     public record Config(BlockStateProvider core, BlockStateProvider shell, BlockStateProvider hanging, IntProvider length,
-                         IntProvider radius, float hangingChance) implements FeatureConfiguration {
+                         IntProvider radius, float hangingChance, java.util.Optional<BlockStateProvider> node, float nodeChance)
+        implements FeatureConfiguration {
+        public Config(BlockStateProvider core, BlockStateProvider shell, BlockStateProvider hanging, IntProvider length,
+                      IntProvider radius, float hangingChance) {
+            this(core, shell, hanging, length, radius, hangingChance, java.util.Optional.empty(), 0.0F);
+        }
+
         public static final Codec<Config> CODEC = RecordCodecBuilder.create(i -> i.group(
             BlockStateProvider.CODEC.fieldOf("core").forGetter(Config::core),
             BlockStateProvider.CODEC.fieldOf("shell").forGetter(Config::shell),
             BlockStateProvider.CODEC.fieldOf("hanging").forGetter(Config::hanging),
             net.minecraft.util.valueproviders.IntProviders.codec(4, 40).fieldOf("length").forGetter(Config::length),
             net.minecraft.util.valueproviders.IntProviders.codec(1, 3).fieldOf("radius").forGetter(Config::radius),
-            Codec.floatRange(0.0F, 1.0F).fieldOf("hanging_chance").forGetter(Config::hangingChance)
+            Codec.floatRange(0.0F, 1.0F).fieldOf("hanging_chance").forGetter(Config::hangingChance),
+            BlockStateProvider.CODEC.optionalFieldOf("node").forGetter(Config::node),
+            Codec.floatRange(0.0F, 1.0F).optionalFieldOf("node_chance", 0.0F).forGetter(Config::nodeChance)
         ).apply(i, Config::new));
     }
 
@@ -73,7 +82,12 @@ public final class RootFeature extends Feature<RootFeature.Config> {
                             continue;
                         }
                         boolean isCore = d <= r - 0.4;
-                        level.setBlock(q, (isCore ? cfg.core() : cfg.shell()).getState(level, random, q), Block.UPDATE_CLIENTS);
+                        BlockStateProvider provider = isCore ? cfg.core() : cfg.shell();
+                        // Occasional glowing "sap" nodes in the shell.
+                        if (!isCore && cfg.node().isPresent() && random.nextFloat() < cfg.nodeChance()) {
+                            provider = cfg.node().get();
+                        }
+                        level.setBlock(q, provider.getState(level, random, q), Block.UPDATE_CLIENTS);
                         core.add(q.immutable());
                         placed = true;
                     }

@@ -2,8 +2,11 @@
   "type": "neoforge:add_features",
   "biomes": "#fantasyundergrounds:overworld_cave_targets",
   "features": [
-    "fantasyundergrounds:grand_caverns/large_dripstone",
-    "fantasyundergrounds:grand_caverns/stalactites"
+    "fantasyundergrounds:grand_caverns/strata",
+    "fantasyundergrounds:grand_caverns/glow_veins",
+    "fantasyundergrounds:grand_caverns/stalactites",
+    "fantasyundergrounds:grand_caverns/glow_lichen",
+    "fantasyundergrounds:grand_caverns/hanging_roots"
   ],
   "step": "underground_decoration"
 }

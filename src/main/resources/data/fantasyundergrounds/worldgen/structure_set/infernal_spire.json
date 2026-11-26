@@ -1,0 +1,14 @@
+{
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 73018265,
+    "spacing": 4,
+    "separation": 1
+  },
+  "structures": [
+    {
+      "structure": "fantasyundergrounds:infernal_spire",
+      "weight": 1
+    }
+  ]
+}

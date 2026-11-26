@@ -2,7 +2,9 @@
   "type": "neoforge:add_features",
   "biomes": "#fantasyundergrounds:overworld_cave_targets",
   "features": [
-    "fantasyundergrounds:drowned/floor_sediment"
+    "fantasyundergrounds:drowned/floor_sediment",
+    "fantasyundergrounds:drowned/sea_pickles",
+    "fantasyundergrounds:drowned/glow_lichen"
   ],
   "step": "underground_decoration"
 }
