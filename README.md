@@ -1,11 +1,12 @@
 # Fantasy Undergrounds
 
-A cave-generation overhaul for **Minecraft 26.2** on **NeoForge 26.2.0.95**. It replaces the Overworld's swiss-cheese caves with fewer, much larger and more varied underground spaces, while keeping the total amount of open space, the ore yield and every other mod's world generation close to vanilla.
+A cave-generation overhaul for **Minecraft 26.2** on **NeoForge 26.2.0.95**. It replaces the Overworld's swiss-cheese caves with fewer, monumental underground spaces stacked down to a new world floor at y −128, while keeping the ore yield and every other mod's world generation close to vanilla.
 
 * **Vanilla blocks only.** No new blocks, items, fluids, textures or entities. The mod adds density functions, features, placement modifiers, a block-state provider, a structure and tags.
 * **No new biomes**, and the biome source is never touched. Environments are noise *zones* that live alongside whatever biomes the world has, vanilla or modded.
-* **No dependencies** besides NeoForge.
-* **Server-side worldgen.** Clients don't need it to join, though they need it to see the `/fantasyundergrounds` command suggestions.
+* **No dependencies** besides NeoForge. Two Mixins: `ChunkMap` (wires the noise router) and `NoiseBasedChunkGenerator` (moves vanilla's deep lava level down with the deeper floor).
+* **Server-side worldgen.** Clients don't need it to join; with it they also get the environment fog and the `/fantasyundergrounds` command suggestions.
+* **New worlds only for the deeper floor.** An existing world keeps the height its chunks were saved with; create a new world to get the −128 floor.
 
 ## Underground environments
 
@@ -55,10 +56,16 @@ Giant mushrooms, crystals, roots and spires are structures (`fantasyundergrounds
 
 ## Compatibility
 
-* **Ores:** this mod never removes, replaces or reorders any feature, including the ore step. Its own decoration only replaces base stone (`#fantasyundergrounds:replaceable_base`: stone, deepslate, tuff, granite, diorite, andesite) or air, and runs after the ores, so ores from any mod stay where their mod put them. Tested with **Occultism** and **Powah**: every ore is within ±15% of vanilla (see `reports/`).
-* **Biome mods:** tested with **Biomes O' Plenty** 26.2.0.0.28 (with TerraBlender and GlitchCore). All test gates pass against a vanilla + BoP baseline: ores within +0.4 … +7.8%, no slowdown, no worldgen warnings, BoP's biomes and blocks unchanged (`reports/phase6-bop.md`).
-* **Terrain mods (Tectonic, Terralith, Lithostitched): untested.** The mod rewrites the Overworld noise router by registry key, through one Mixin in `ChunkMap`. If a terrain mod's router no longer references the vanilla cave inputs, the mod falls back to adding its caverns on top of that terrain mod's own caves, and logs a warning.
+* **Ores:** this mod never removes, replaces or reorders any feature, including the ore step. Its own decoration only replaces base stone (`#fantasyundergrounds:replaceable_base`: stone, deepslate, tuff, granite, diorite, andesite) or air, and runs after the ores, so ores from any mod stay where their mod put them. Tested with **Occultism** and **Powah** (`reports/overhaul.md`): every ore is within −7.8 … +6.9% of the same deep world without this mod's caves, and each ore family (stone + deepslate variants together) is within −3.3 … +8.5% of 384-block vanilla. The deeper floor moves ores whose height range is anchored to the world bottom (diamonds, lower redstone, buried lapis, some modded ores) down with it, so their stone/deepslate split differs from vanilla.
+* **Performance:** chunk generation is **+31% slower than vanilla** in the main audit (+35% in the 2,016 × 2,016-block pre-generation). Almost all of it is the deeper world itself (+26%: vanilla's noise fill and surface pass over 64 more layers); this mod's caves and decoration add +3.7% on top. Over the brief's 30% target; see "Known issues".
+* **Biome mods:** **Biomes O' Plenty** 26.2.0.0.28 (with TerraBlender and GlitchCore) passed every gate **before the deep-world overhaul** (`reports/phase6-bop.md`). Not re-tested since.
+* **Terrain mods and data packs (Tectonic, Terralith, Lithostitched): untested.** The deep world overrides `minecraft:overworld` in `dimension_type` and `worldgen/noise_settings`; another pack overriding the same files will win or lose depending on load order. The mod rewrites the Overworld noise router by registry key; if a terrain mod's router no longer references the vanilla cave inputs, it falls back to adding its caverns on top of that mod's own caves and logs a warning.
 * **Mods that compile or replace density functions** (C2ME-style): untested.
+
+## Known issues
+
+* Generation speed is over the brief's +30% target because of the deeper world (see Performance).
+* In vanilla cave biomes that overlap a zone (dripstone caves, lush caves), the biome's own decoration still runs next to this mod's, as the brief requires. In the new very tall chambers, dripstone caves' large dripstone columns can look like a forest of thin pillars.
 
 ## How it works (short version)
 
