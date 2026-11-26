@@ -124,12 +124,7 @@ public final class FuCommands {
                         continue;
                     }
                     ZoneField.Column col = zones.column(bx + dx, bz + dz);
-                    ZoneField.Slot slot;
-                    if (env == Environment.FLOATING_ISLANDS) {
-                        slot = col.deep().islands() > 0 ? col.deep() : null;
-                    } else {
-                        slot = col.deep().env() == env ? col.deep() : (col.shallow().env() == env ? col.shallow() : null);
-                    }
+                    ZoneField.Slot slot = env == Environment.FLOATING_ISLANDS ? col.islandSlot() : col.find(env);
                     if (slot == null) {
                         continue;
                     }

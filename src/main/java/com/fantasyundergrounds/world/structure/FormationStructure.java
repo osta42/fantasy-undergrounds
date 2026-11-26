@@ -78,15 +78,8 @@ public final class FormationStructure extends Structure {
         int z = cp.getMinBlockZ() + random.nextInt(16);
         long pieceSeed = random.nextLong();
         ZoneField zones = FuWorldgen.zones(ctx.seed());
-        // The chamber of the right environment in this column: deep slot first, then shallow.
-        ZoneField.Slot slot = null;
-        for (int probeY : new int[] {-30, 15}) {
-            ZoneField.Slot sl = zones.sample(x, probeY, z).slot();
-            if (sl.env() == this.kind.env) {
-                slot = sl;
-                break;
-            }
-        }
+        // The chamber of the right environment in this column (any tier).
+        ZoneField.Slot slot = zones.sample(x, -30, z).column().find(this.kind.env);
         if (slot == null) {
             return Optional.empty();
         }

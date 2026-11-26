@@ -15,7 +15,7 @@ import net.minecraft.world.level.levelgen.DensityFunction;
 final class DensityEstimator {
     private DensityEstimator() {}
 
-    private static final int[] MAP_LEVELS = {-44, -28, -12, 4, 20};
+    private static final int[] MAP_LEVELS = {-100, -76, -52, -28, -4, 20};
 
     private static double lerp(double t, double a, double b) {
         return a + t * (b - a);
@@ -45,7 +45,7 @@ final class DensityEstimator {
     static Map<String, Object> run(ServerLevel level, int centerBlockX, int centerBlockZ, int radiusBlocks) {
         DensityFunction f = level.getChunkSource().randomState().router().finalDensity();
         int step = 8;
-        int minY = -64;
+        int minY = -128;
         int maxY = 80;
         int bands = (maxY - minY) / 8;
         long[] open = new long[bands];

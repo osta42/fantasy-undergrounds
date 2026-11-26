@@ -99,8 +99,8 @@ public final class FuSelfTest {
         }
         for (int cx = -40; cx < 40; cx++) {
             for (int cz = -40; cz < 40; cz++) {
-                ZoneField.Slot slot = zones.column(cx, cz).deep();
-                if (slot.islands() == 0) {
+                ZoneField.Slot slot = zones.column(cx, cz).islandSlot();
+                if (slot == null) {
                     continue;
                 }
                 islandCells++;

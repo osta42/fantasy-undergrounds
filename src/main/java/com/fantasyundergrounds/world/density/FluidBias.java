@@ -106,6 +106,11 @@ public final class FluidBias implements DensityFunction {
                 int mid = Math.floorDiv(ctx.blockY(), 40) * 40 + 20;
                 yield Math.abs(pondLevel(s) - mid) <= 10.0 ? lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ()) : -1.0;
             }
+            // Grand Caverns: a wide central lake in the lowest basin, dry above it.
+            case GRAND_CAVERNS -> {
+                int mid = Math.floorDiv(ctx.blockY(), 40) * 40 + 20;
+                yield Math.abs(caveLakeLevel(s) - mid) <= 10.0 ? lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ()) : -1.0;
+            }
             // Crystal Hollows are always dry.
             case CRYSTAL_HOLLOWS -> -1.0;
             default -> canyonFloodedness(ctx);
@@ -137,6 +142,7 @@ public final class FluidBias implements DensityFunction {
         double target = switch (s.env()) {
             case DROWNED_ABYSSES -> s.floorY() + 0.45 * s.height();
             case UNDERGROUND_FORESTS -> pondLevel(s);
+            case GRAND_CAVERNS -> caveLakeLevel(s);
             default -> s.floorY() + 0.16 * s.height();
         };
         return Math.max(-1.0, Math.min(1.0, (target - mid) / 10.0));
@@ -147,11 +153,16 @@ public final class FluidBias implements DensityFunction {
         return s.floorY() + 3.0;
     }
 
+    /** Grand Cavern central lakes: the floor's terraces descend to the middle, where the lake sits. */
+    private static double caveLakeLevel(ZoneField.Slot s) {
+        return s.floorY() + 0.10 * s.height();
+    }
+
     private ZoneField.Slot lakeSlot(int x, int mid, int z) {
         for (int dy : new int[] {0, -15, 15}) {
             ZoneField.Slot s = this.zones.sample(x, mid + dy, z).slot();
             if ((s.env() == Environment.DROWNED_ABYSSES && !s.submerged()) || s.env() == Environment.INFERNAL_CHASMS
-                || s.env() == Environment.UNDERGROUND_FORESTS) {
+                || s.env() == Environment.UNDERGROUND_FORESTS || s.env() == Environment.GRAND_CAVERNS) {
                 return s;
             }
         }
@@ -169,7 +180,7 @@ public final class FluidBias implements DensityFunction {
                 return 1.0;
             }
             // Drowned lakes and forest ponds are always water, never aquifer lava.
-            drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS;
+            drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS || env == Environment.GRAND_CAVERNS;
         }
         // The fluid-type cell is 64 blocks wide: a forest or abyss away from its centre must
         // still get water, so also check four points around the centre.
@@ -179,7 +190,7 @@ public final class FluidBias implements DensityFunction {
             }
             for (int dy : new int[] {0, -15, 15}) {
                 Environment env = this.zones.sample(bx + o[0], mid + dy, bz + o[1]).slot().env();
-                drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS;
+                drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS || env == Environment.GRAND_CAVERNS;
             }
         }
         if (drowned) {
