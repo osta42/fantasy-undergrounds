@@ -247,6 +247,11 @@ public final class ZoneField {
         if (deep) {
             centerY = -34 + 16 * (r2 - 0.5);
             centerY = Math.max(centerY, minY + height * 0.5);
+            // Every open space below y=-54 is filled with lava by vanilla (hardcoded); keep the
+            // floors of forests, crystal hollows and root systems above it.
+            if (env == Environment.UNDERGROUND_FORESTS || env == Environment.CRYSTAL_HOLLOWS || env == Environment.ROOT_SYSTEMS) {
+                centerY = Math.max(centerY, -48 + height * 0.5);
+            }
         } else {
             centerY = 16 + 14 * (r2 - 0.5);
             centerY = Math.min(centerY, maxY - height * 0.5);
