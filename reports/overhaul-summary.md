@@ -1,5 +1,19 @@
 # Overhaul: monumental chambers — results
 
+**Current build: world floor y −96 (user choice after the −128 version missed the speed gate). All gates pass.**
+
+| Gate | Plain (Occultism + Powah) `overhaul96.md` | With Biomes O' Plenty `overhaul96-bop.md` |
+|---|---|---|
+| 2 Ores (vs same deep world, caves off) | PASS, −7.3 … +6.7% | PASS, −7.9 … +4.0% |
+| Ore families vs vanilla (informational) | −4.5 … +4.9% | — |
+| 3 Performance vs vanilla (≤ +30%) | PASS, +0.1% audit / +3.0% pre-generation | PASS, +12.7% / +17.4% (BoP baselines from 24 Nov) |
+| 4 Stability (15,876-chunk pre-generation) | PASS | PASS |
+| 5a / 5b Determinism, ore safety | PASS | PASS |
+| 6 Structures | PASS (all ≥ 100%) | PASS |
+| 7 Registration | PASS | PASS (BoP features unchanged) |
+
+## History: the first version, floor y −128
+
 Gate suite `tools/run_gates.sh --tag overhaul` (fresh vanilla baselines, Occultism and Powah loaded, seed 1234567890, 64 × 64-chunk audits plus a 2,016 × 2,016-block pre-generation). Full tables: `overhaul.md`, `overhaul-pregen.md`.
 
 | Gate | Result | Notes |
