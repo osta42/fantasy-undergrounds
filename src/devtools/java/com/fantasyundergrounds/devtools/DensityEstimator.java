@@ -16,7 +16,7 @@ import net.minecraft.world.level.levelgen.DensityFunctions;
 final class DensityEstimator {
     private DensityEstimator() {}
 
-    private static final int[] MAP_LEVELS = {-100, -76, -52, -28, -4, 20};
+    private static final int[] MAP_LEVELS = {-84, -64, -44, -24, -4, 20};
 
     private static double lerp(double t, double a, double b) {
         return a + t * (b - a);
@@ -99,7 +99,7 @@ final class DensityEstimator {
         // single point, which makes the preliminary surface search dominate the run time.
         DensityFunction f = level.getChunkSource().randomState().router().finalDensity().mapAll(DensityEstimator::columnCache);
         int step = 8;
-        int minY = -128;
+        int minY = -96;
         int maxY = 80;
         int bands = (maxY - minY) / 8;
         long[] open = new long[bands];

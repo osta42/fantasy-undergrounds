@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Second (and last) Mixin, approved for the deep world. Vanilla hardcodes "every open space below
- * y=-54 is lava" in the aquifer's global fluid picker. With the Overworld floor moved to y=-128,
+ * y=-54 is lava" in the aquifer's global fluid picker. With the Overworld floor moved to y=-96,
  * that would drown the whole new deep layer in lava. For worlds whose noise floor is below -64,
  * the lava level becomes 10 blocks above the floor instead (y=-118 for the deep Overworld).
  * Every other world (vanilla depth, the Nether, the End, other dimensions) is left untouched.

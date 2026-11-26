@@ -56,7 +56,7 @@ public final class FuConfig {
         INTENSITY = b.comment("Overall cave generation intensity. Scales how often every environment appears.")
             .defineInRange("intensity", 1.0, 0.0, 3.0);
         MIN_Y = b.comment("Lowest Y that caverns and tunnels may carve (bedrock layers are always protected).")
-            .defineInRange("minimumY", -100, -128, 0);
+            .defineInRange("minimumY", -84, -128, 0);
         MAX_Y = b.comment("Highest Y that caverns and tunnels may carve. Vanilla's surface protection also applies.")
             .defineInRange("maximumY", 48, 0, 256);
         REMOVE_VANILLA_CARVERS = b.comment("Remove the vanilla carvers minecraft:cave, minecraft:cave_extra_underground and",

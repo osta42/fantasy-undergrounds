@@ -8,11 +8,11 @@ import java.util.List;
  *
  * <p>Space is divided into horizontal jittered cells (~192 blocks at cavernSizeScale 1.0) whose
  * borders are domain-warped in 3D, so walls between zones curve and lean. Every cell gets a
- * vertical <em>plan</em> over the deep world (floor y=-128):
+ * vertical <em>plan</em> over the deep world (floor y=-96):
  * <ul>
  *   <li><b>stacked</b>: a deep chamber near bedrock, a mid chamber above it and a shallow cave on top,
  *       joined by vertical shafts (the mid chamber's floor opens into a chasm down to the deep one)</li>
- *   <li><b>mega</b>: one monumental chamber spanning the deep and mid levels (80-120 tall), plus a shallow cave</li>
+ *   <li><b>mega</b>: one monumental chamber spanning the deep and mid levels (76-100 tall), plus a shallow cave</li>
  * </ul>
  * Each slot rolls its environment from a depth-dependent table: Infernal Chasms, Drowned Abysses
  * and Crystal Hollows sit near bedrock, Grand Caverns, Underground Forests and Root Systems in the
@@ -303,16 +303,16 @@ public final class ZoneField {
         double floor;
         switch (tier) {
             case DEEP -> {
-                height = 40 + Math.min(24, maxH - 40) * Math.pow(r1, 0.9);
+                height = 40 + Math.min(16, maxH - 40) * Math.pow(r1, 0.9);
                 floor = minY + 2 + 8 * r2;
             }
             case MID -> {
-                height = 40 + Math.max(0, Math.min(26, maxH - 40)) * Math.pow(r1, 0.9);
-                floor = Double.isNaN(below) ? -62 + 12 * r2 : Math.max(below + 8, -62 + 12 * r2);
+                height = 40 + Math.max(0, Math.min(22, maxH - 40)) * Math.pow(r1, 0.9);
+                floor = Double.isNaN(below) ? minY + 34 + 12 * r2 : Math.max(below + 8, minY + 34 + 12 * r2);
             }
             case 3 -> {
-                height = 80 + Math.max(0, Math.min(24, maxH + 24 - 80)) * r1;
-                floor = minY + 2 + 14 * r2;
+                height = 76 + Math.max(0, Math.min(24, maxH + 24 - 76)) * r1;
+                floor = minY + 2 + 12 * r2;
             }
             default -> {
                 height = 16 + 16 * r1;

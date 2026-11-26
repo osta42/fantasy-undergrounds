@@ -1,16 +1,16 @@
 # Fantasy Undergrounds
 
-A cave-generation overhaul for **Minecraft 26.2** on **NeoForge 26.2.0.95**. It replaces the Overworld's swiss-cheese caves with fewer, monumental underground spaces stacked down to a new world floor at y −128, while keeping the ore yield and every other mod's world generation close to vanilla.
+A cave-generation overhaul for **Minecraft 26.2** on **NeoForge 26.2.0.95**. It replaces the Overworld's swiss-cheese caves with fewer, monumental underground spaces stacked down to a new world floor at y −96, while keeping the ore yield and every other mod's world generation close to vanilla.
 
 * **Vanilla blocks only.** No new blocks, items, fluids, textures or entities. The mod adds density functions, features, placement modifiers, a block-state provider, a structure and tags.
 * **No new biomes**, and the biome source is never touched. Environments are noise *zones* that live alongside whatever biomes the world has, vanilla or modded.
 * **No dependencies** besides NeoForge. Two Mixins: `ChunkMap` (wires the noise router) and `NoiseBasedChunkGenerator` (moves vanilla's deep lava level down with the deeper floor).
 * **Server-side worldgen.** Clients don't need it to join; with it they also get the environment fog and the `/fantasyundergrounds` command suggestions.
-* **New worlds only for the deeper floor.** An existing world keeps the height its chunks were saved with; create a new world to get the −128 floor.
+* **New worlds only for the deeper floor.** An existing world keeps the height its chunks were saved with; create a new world to get the −96 floor. Worlds made with an earlier build of this overhaul (floor −128) need to be re-created.
 
 ## Underground environments
 
-The Overworld floor is lowered to **y −128** (a built-in override of the Overworld dimension type and noise settings, plus a Mixin that moves vanilla's deep lava level down with it), and caves are planned as **monumental chambers stacked in tiers**: 40–104 blocks of open air, flat high vaults with dark ceilings, cliff terraces stepping down to a central lake or chasm, sweeping rock arches, rare thick pillars and big framing stalactites. Wide shafts drop from an upper chamber into the one below. The walls are painted in **macro rock strata** (deepslate base, tuff middle, stone/calcite upper walls, each environment with its own palette), and light comes from a few focal sources rather than scattered glow.
+The Overworld floor is lowered to **y −96** (32 layers deeper than vanilla) (a built-in override of the Overworld dimension type and noise settings, plus a Mixin that moves vanilla's deep lava level down with it), and caves are planned as **monumental chambers stacked in tiers**: 40–100 blocks of open air, flat high vaults with dark ceilings, cliff terraces stepping down to a central lake or chasm, sweeping rock arches, rare thick pillars and big framing stalactites. Wide shafts drop from an upper chamber into the one below. The walls are painted in **macro rock strata** (deepslate base, tuff middle, stone/calcite upper walls, each environment with its own palette), and light comes from a few focal sources rather than scattered glow.
 
 | Environment | What it is | Where (vertical progression) |
 |---|---|---|
@@ -38,7 +38,7 @@ Giant mushrooms, crystals, roots and spires are structures (`fantasyundergrounds
 | general | `enabled` | true | Master switch. `false` gives vanilla caves (vanilla carvers kept). |
 | general | `dimensions` | `minecraft:overworld` | Dimensions to overhaul. |
 | general | `intensity` | 1.0 | Scales how often every environment appears (0–3). |
-| general | `minimumY` / `maximumY` | −100 / 48 | Vertical range caverns and tunnels may carve. The layer below −100 stays solid (diamond depth). |
+| general | `minimumY` / `maximumY` | −84 / 48 | Vertical range caverns and tunnels may carve. The 12 layers above the world floor stay solid (diamond depth). |
 | general | `removeVanillaCarvers` | true | Removes only `minecraft:cave`, `cave_extra_underground` and `canyon` from Overworld biomes. Modded carvers are never touched. |
 | general | `surfaceEntranceFrequency` | 1.0 | Surface cave entrances and sinkholes (1.0 = vanilla). |
 | shape | `cavernSizeScale` | 1.0 | Size of zones and caverns (0.5–2). |

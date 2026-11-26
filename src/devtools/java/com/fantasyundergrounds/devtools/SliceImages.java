@@ -18,8 +18,8 @@ import net.neoforged.neoforge.common.Tags;
  * Y levels (1 px = 1 block) and two vertical cuts through the region centre (X/Y and Z/Y).
  */
 final class SliceImages {
-    static final int[] LEVELS = {-110, -90, -70, -50, -30, -10, 10, 25};
-    private static final int V_MIN = -128;
+    static final int[] LEVELS = {-86, -70, -50, -30, -10, 10, 25};
+    private static final int V_MIN = -96;
     private static final int V_MAX = 96;
 
     private final int minBlockX;
