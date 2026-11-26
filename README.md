@@ -9,20 +9,20 @@ A cave-generation overhaul for **Minecraft 26.2** on **NeoForge 26.2.0.95**. It 
 
 ## Underground environments
 
-| Environment | What it is | Rarity (per zone slot, at default settings) |
+| Environment | What it is | Frequency (per zone slot, default settings) |
 |---|---|---|
-| Ordinary tunnels | Winding worm tunnels at two scales: main tunnels and thinner maze patches | most of the underground |
-| Grand Caverns | Huge chambers with domed ceilings, terraced floors, hourglass pillars and natural rock bridges; giant ones merge into caverns hundreds of blocks across | 6.5% deep / 4.2% shallow |
-| Drowned Abysses | Flooded caverns from the vanilla aquifer: deep underground lakes or fully submerged chambers, waterfalls | 2.9% / 3.4% |
-| Infernal Chasms | Long rifts with V-shaped trenches, lava lakes, basalt and blackstone, obsidian crusts, magma floors, lava falls | 5.2% / 0.8% |
-| Underground Forests | Moss-covered chambers with azalea trees, oaks, huge mushrooms, cave vines and spore blossoms | 1.3% / 2.1% |
-| Crystal Hollows | Rounder, geode-like chambers lined with calcite and amethyst, with amethyst spires and clusters | 2.1% / 1.7% |
-| Ancient Root Systems | Chambers hung with giant winding roots (dark-oak wood in a mangrove-root shell), hanging roots, rooted-dirt ceilings | 0.9% / 1.7% |
-| Underground Grand Canyons | Long, meandering gorges (360–760 blocks) with cliff levels and ledges, banded rock strata, a river on the floor and an arched roof | about one per 1,900 × 1,900 blocks |
-| Floating Stone Islands | Moss-topped rock islands floating in the tallest Grand Caverns | about 1 in 90 zone cells |
-| Ancient Depths ruins | Deep structures: a colonnade hall, a sunken crypt or a stepped temple, with vanilla loot | one per 64 × 64 chunks on average |
+| Ordinary tunnels | Winding worm tunnels linking everything | between environments |
+| Grand Caverns | Huge chambers up to ~96 blocks tall: towering pillars, broad natural bridges, rock stalactites and stalagmites, banded strata walls, glowing froglight veins and ceiling clusters, glow-berry vines; giant ones merge into caverns hundreds of blocks across | 11% deep / 8% shallow |
+| Drowned Abysses | Huge flooded caverns from the vanilla aquifer: lakes or fully submerged chambers, lit sea-pickle beds | 5% / 6% |
+| Infernal Chasms | Long rifts with lava seas, blackstone/basalt/obsidian **spires** (giant formations), crying-obsidian veins, lava falls | 6.5% / 2% |
+| Underground Forests | Dry moss-covered chambers with ponds, **giant mushrooms** with shroomlight, azalea and oak trees, cave vines, glowing fungus | 4.5% / 9% |
+| Crystal Hollows | Geode-like chambers lined with calcite and amethyst, **giant crystal clusters** with glowing cores, crystal spires with light shards | 6% / 5% |
+| Ancient Root Systems | **Giant arching roots** (wood core, mangrove-root shell, glowing sap), hanging roots, rooted-dirt ceilings | 4.5% / 6% |
+| Underground Grand Canyons | Long, meandering gorges (360–760 blocks, up to ~70 wide) with cliff levels, natural stone bridges, banded strata, a river and an arched roof | about 3 in 4 of the 1,024-block canyon cells |
+| Floating Stone Islands | Clusters of 3–8 moss-topped islands in almost every tall Grand Cavern | most tall Grand Caverns |
+| Ancient Depths ruins | Ruin complexes: a hall, crypt or stepped temple with 1–3 wings, joined by collapsed corridors or broken bridges over chasms; vanilla loot | one per 28 × 28 chunks on average |
 
-Inside lush caves, dripstone caves, the deep dark and other cave biomes (`#fantasyundergrounds:keeps_own_cave_decoration`, which includes `#c:is_cave`), a zone still shapes the cave but the cave biome keeps its own decoration.
+Giant mushrooms, crystals, roots and spires are structures (`fantasyundergrounds:giant_mushroom`, `giant_crystal`, `giant_root`, `infernal_spire`), so they can be found with `/locate structure`. Only the deep dark (`#fantasyundergrounds:keeps_own_cave_decoration`) keeps its own decoration; everywhere else this mod's decoration is added next to the cave biome's own. Screenshots: `reports/screenshots/` (no shaders, no night vision).
 
 ## Configuration
 
@@ -37,11 +37,11 @@ Inside lush caves, dripstone caves, the deep dark and other cave biomes (`#fanta
 | general | `removeVanillaCarvers` | true | Removes only `minecraft:cave`, `cave_extra_underground` and `canyon` from Overworld biomes. Modded carvers are never touched. |
 | general | `surfaceEntranceFrequency` | 1.0 | Surface cave entrances and sinkholes (1.0 = vanilla). |
 | shape | `cavernSizeScale` | 1.0 | Size of zones and caverns (0.5–2). |
-| shape | `maxCavernHeight` | 80 | Tallest cavern. Floating islands need ≥ 60. |
+| shape | `maxCavernHeight` | 96 | Tallest cavern. Floating islands need ≥ 56. |
 | shape | `tunnelFrequency` / `tunnelWidth` | 1.0 / 1.0 | Ordinary tunnels. |
 | environments | `<environment>.enabled` / `.frequency` | true / 1.0 | Per-environment switch and frequency multiplier (0–5). |
-| environments | `ancientRuinSpacing` | 64 | Average spacing of ruins, in chunks. |
-| fluids | `maxWaterSpringsPerChunk` / `maxLavaSpringsPerChunk` | 4 / 2 | Cap on placed springs and falls. Big lakes and lava seas come from the aquifer and are not capped. |
+| environments | `ancientRuinSpacing` | 28 | Average spacing of ruin complexes, in chunks. |
+| fluids | `maxWaterSpringsPerChunk` / `maxLavaSpringsPerChunk` | 6 / 4 | Cap on placed springs and falls. Big lakes and lava seas come from the aquifer and are not capped. |
 
 ## Commands (operators)
 
