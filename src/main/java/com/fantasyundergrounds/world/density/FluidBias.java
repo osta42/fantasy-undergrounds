@@ -171,6 +171,17 @@ public final class FluidBias implements DensityFunction {
             // Drowned lakes and forest ponds are always water, never aquifer lava.
             drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS;
         }
+        // The fluid-type cell is 64 blocks wide: a forest or abyss away from its centre must
+        // still get water, so also check four points around the centre.
+        for (int[] o : new int[][] {{-20, -20}, {20, -20}, {-20, 20}, {20, 20}}) {
+            if (drowned) {
+                break;
+            }
+            for (int dy : new int[] {0, -15, 15}) {
+                Environment env = this.zones.sample(bx + o[0], mid + dy, bz + o[1]).slot().env();
+                drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS;
+            }
+        }
         if (drowned) {
             return 0.0;
         }
