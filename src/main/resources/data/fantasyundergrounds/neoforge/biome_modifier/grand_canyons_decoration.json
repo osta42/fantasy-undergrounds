@@ -4,9 +4,7 @@
   "features": [
     "fantasyundergrounds:canyon/strata",
     "fantasyundergrounds:canyon/riverbed",
-    "fantasyundergrounds:canyon/glow_lichen",
-    "fantasyundergrounds:canyon/glow_veins",
-    "fantasyundergrounds:canyon/ceiling_glow"
+    "fantasyundergrounds:canyon/glow_lichen"
   ],
   "step": "underground_decoration"
 }

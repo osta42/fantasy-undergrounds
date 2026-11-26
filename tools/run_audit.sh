@@ -28,11 +28,13 @@ Usage: tools/run_audit.sh --variant vanilla|modded --label LABEL [options]
   --estimate-only              only run the density estimate
   --ore-mods                   load the third-party ore mods (-PfuOreMods)
   --bop-mods                   load Biomes O' Plenty, TerraBlender and GlitchCore (-PfuBopMods)
+  --fu-disabled                modded variant with the mod's config "enabled = false": the deep
+                               world (floor y -128) without this mod's caves, the ore baseline
 EOF
 }
 
 variant='' label='' seed=1234567890 cx=512 cz=512 radius=16 tile=16 ssr=100
-scan=true structures=true registry=true single=false estimate_radius=0 estimate_only=false ore_mods=false bop_mods=false
+scan=true structures=true registry=true single=false estimate_radius=0 estimate_only=false ore_mods=false bop_mods=false fu_disabled=false
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -52,6 +54,7 @@ while [[ $# -gt 0 ]]; do
         --estimate-only) estimate_only=true; shift ;;
         --ore-mods) ore_mods=true; shift ;;
         --bop-mods) bop_mods=true; shift ;;
+        --fu-disabled) fu_disabled=true; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
     esac
@@ -103,6 +106,15 @@ if [[ -z "${JAVA_HOME:-}" ]]; then
     done
 fi
 
+# Every modded run starts from the default STARTUP config (a stale file from an older build
+# would silently keep old defaults); --fu-disabled switches the mod's caves off.
+fu_config="$game_dir/config/fantasyundergrounds-startup.toml"
+rm -f "$fu_config"
+if [[ "$fu_disabled" == true ]]; then
+    mkdir -p "$game_dir/config"
+    printf '[general]\n\tenabled = false\n' > "$fu_config"
+fi
+
 out_dir="$game_dir/fu-audit"
 mkdir -p "$out_dir"
 rm -f "$out_dir/$label.json" "$out_dir/$label.log"
@@ -126,7 +138,7 @@ elapsed_min=$(( (SECONDS - start + 30) / 60 ))
 
 log="$game_dir/logs/latest.log"
 [[ -f "$log" ]] && cp -f "$log" "$out_dir/$label.log"
-rm -f "$game_dir/fu-audit.properties"
+rm -f "$game_dir/fu-audit.properties" "$fu_config"
 
 json="$out_dir/$label.json"
 if [[ -f "$json" ]]; then

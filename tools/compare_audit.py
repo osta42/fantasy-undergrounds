@@ -177,6 +177,8 @@ def main():
     ap.add_argument("candidate")
     ap.add_argument("--candidate2")
     ap.add_argument("--baseline2", help="second fresh-world vanilla run, to measure vanilla's own variation")
+    ap.add_argument("--ore-baseline", help="deep-world run with this mod's caves switched off (run_audit.sh --fu-disabled): "
+                    "the ore gate compares against it, because a deeper world moves the stone/deepslate split of ores")
     ap.add_argument("--ore-tolerance", type=float, default=15.0)
     ap.add_argument("--perf-tolerance", type=float, default=30.0)
     ap.add_argument("--md")
@@ -192,10 +194,15 @@ def main():
     gates = {}
 
     # Gate 2 - ores
-    if "scan" in base and "scan" in cand:
-        ok, rows = ore_gate(base, cand, args.ore_tolerance)
+    ore_base = load(args.ore_baseline) if args.ore_baseline else base
+    if "scan" in ore_base and "scan" in cand:
+        ok, rows = ore_gate(ore_base, cand, args.ore_tolerance)
         gates["2 Ore audit"] = ok
         w(f"\n## Gate 2 - ore audit (tolerance +/-{args.ore_tolerance:.0f}%, ores with >=50 baseline blocks gated)\n")
+        if args.ore_baseline:
+            w(f"Baseline for this gate: `{ore_base['label']}`, the same deep world (floor y -128) with this mod's caves "
+              "switched off. Against the 384-block vanilla world the stone/deepslate split of ores whose height range "
+              "is anchored to the world bottom moves down; see the ore family totals below.\n")
         w("| ore | baseline | candidate | change % | gated | pass |\n|---|---:|---:|---:|:-:|:-:|")
         for ore, b, c, d, g, p in rows:
             w(f"| {ore} | {b} | {c} | {fmt(d)} | {'yes' if g else 'no'} | {'PASS' if p else 'FAIL'} |")
@@ -206,6 +213,28 @@ def main():
     gates["3 Performance"] = d is not None and d <= args.perf_tolerance
     w(f"\n## Gate 3 - performance (<= +{args.perf_tolerance:.0f}%)\n")
     w(f"| | baseline | candidate | change |\n|---|---:|---:|---:|\n| ms per chunk (wall, parallel batch) | {bp:.2f} | {cp:.2f} | {fmt(d)}% |")
+
+    if args.ore_baseline and "performance" in ore_base:
+        op = ore_base["performance"]["msPerChunk"]
+        w(f"| informational: `{ore_base['label']}` (deep world, caves off) | {op:.2f} | {cp:.2f} | {fmt(pct(cp, op))}% |")
+        w(f"\nDeep world alone vs vanilla: {fmt(pct(op, bp))}%; this mod's caves and decoration on top of it: {fmt(pct(cp, op))}%.")
+
+    # Ore families: stone + deepslate variants together, against the main baseline (informational)
+    if "scan" in base and "scan" in cand:
+        def fam(scan):
+            out = {}
+            for k, v in scan["ores"].items():
+                ns, name = k.split(":", 1)
+                name = name.replace("deepslate_", "").replace("_deepslate", "")
+                out[ns + ":" + name] = out.get(ns + ":" + name, 0) + v
+            return out
+        bf, cf = fam(base["scan"]), fam(cand["scan"])
+        w(f"\n## Ore families vs `{base['label']}` (stone + deepslate variants together; informational)\n")
+        w("| ore family | baseline | candidate | change % |\n|---|---:|---:|---:|")
+        for k in sorted(set(bf) | set(cf)):
+            b_, c_ = bf.get(k, 0), cf.get(k, 0)
+            if b_ >= 50 or c_ >= 50:
+                w(f"| {k} | {b_} | {c_} | {fmt(pct(c_, b_))} |")
 
     # Gate 4 - stability (logs): no far-chunk warnings, no exception signature absent from baseline
     bst, cst = log_stats(log_for(args.baseline)), log_stats(log_for(args.candidate))
@@ -268,17 +297,21 @@ def main():
         if dv:
             w(f"\nMismatching sections by Y band (vanilla): {dv['bands']}")
 
-    # Gate 6 - structures
-    if "structures" in base and "structures" in cand:
-        ok, rows = structure_gate(base, cand)
+    # Gate 6 - structures (against the deep baseline when it has structure data: the deeper world
+    # moves structures whose height is drawn between the world bottom and sea level, e.g. mineshafts)
+    sbase = ore_base if args.ore_baseline and "structures" in ore_base else base
+    if "structures" in sbase and "structures" in cand:
+        ok, rows = structure_gate(sbase, cand)
         gates["6 Structures"] = ok
         w(f"\n## Gate 6 - structures (found, and >= {STRUCT_INTACT_RATIO:.0%} of baseline structure blocks present)\n")
+        if sbase is not base:
+            w(f"Baseline for this gate: `{sbase['label']}` (same deep world, this mod's caves off).\n")
         w("| structure | baseline pos | candidate pos | same pos | baseline blocks | candidate blocks | ratio | pass |\n|---|---|---|:-:|---:|---:|---:|:-:|")
         for r in rows:
             w(f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} | {r[5]} | {fmt(r[6], 3) if r[6] is not None else 'n/a'} | {'PASS' if r[7] else 'FAIL'} |")
 
     # This mod's own structures (only in the candidate): reported, not gated against vanilla.
-    extra = {k: v for k, v in cand.get("structures", {}).items() if k not in base.get("structures", {})}
+    extra = {k: v for k, v in cand.get("structures", {}).items() if k not in sbase.get("structures", {})}
     if extra:
         w("\n## Structures added by the candidate (informational)\n")
         w("| structure | found | position | pieces | structure blocks | most common blocks |\n|---|:-:|---|---:|---:|---|")

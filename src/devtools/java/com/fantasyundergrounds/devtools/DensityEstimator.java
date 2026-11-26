@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.DensityFunctions;
 
 /**
  * Fast open-volume estimate straight from the level's wired final_density, without generating
@@ -42,8 +43,61 @@ final class DensityEstimator {
         }
     }
 
+    /** Replaces flat_cache / cache_2d markers with a cache keyed by the (x, z) column. */
+    private static DensityFunction columnCache(DensityFunction f) {
+        if (f instanceof DensityFunctions.MarkerOrMarked m) {
+            String type = String.valueOf((Object) m.type());
+            if (type.contains("Flat") || type.contains("2D") || type.contains("2d")) {
+                return new ColumnCache(m.wrapped());
+            }
+        }
+        return f;
+    }
+
+    private static final class ColumnCache implements DensityFunction.SimpleFunction {
+        private final DensityFunction wrapped;
+        private long key = Long.MIN_VALUE;
+        private double value;
+
+        ColumnCache(DensityFunction wrapped) {
+            this.wrapped = wrapped;
+        }
+
+        @Override
+        public double compute(FunctionContext ctx) {
+            long k = ((long) ctx.blockX() << 32) ^ (ctx.blockZ() & 0xFFFFFFFFL);
+            if (k != this.key) {
+                this.value = this.wrapped.compute(ctx);
+                this.key = k;
+            }
+            return this.value;
+        }
+
+        @Override
+        public DensityFunction mapAll(Visitor visitor) {
+            return visitor.apply(new ColumnCache(this.wrapped.mapAll(visitor)));
+        }
+
+        @Override
+        public double minValue() {
+            return this.wrapped.minValue();
+        }
+
+        @Override
+        public double maxValue() {
+            return this.wrapped.maxValue();
+        }
+
+        @Override
+        public net.minecraft.util.KeyDispatchDataCodec<? extends DensityFunction> codec() {
+            return this.wrapped.codec();
+        }
+    }
+
     static Map<String, Object> run(ServerLevel level, int centerBlockX, int centerBlockZ, int radiusBlocks) {
-        DensityFunction f = level.getChunkSource().randomState().router().finalDensity();
+        // Column caches (flat_cache / cache_2d markers) would otherwise be recomputed for every
+        // single point, which makes the preliminary surface search dominate the run time.
+        DensityFunction f = level.getChunkSource().randomState().router().finalDensity().mapAll(DensityEstimator::columnCache);
         int step = 8;
         int minY = -128;
         int maxY = 80;

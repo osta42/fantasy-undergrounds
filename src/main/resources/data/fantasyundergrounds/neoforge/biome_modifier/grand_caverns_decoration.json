@@ -2,12 +2,10 @@
   "type": "neoforge:add_features",
   "biomes": "#fantasyundergrounds:overworld_cave_targets",
   "features": [
-    "fantasyundergrounds:grand_caverns/strata",
-    "fantasyundergrounds:grand_caverns/glow_veins",
     "fantasyundergrounds:grand_caverns/stalactites",
     "fantasyundergrounds:grand_caverns/glow_lichen",
     "fantasyundergrounds:grand_caverns/hanging_roots",
-    "fantasyundergrounds:grand_caverns/ceiling_glow"
+    "fantasyundergrounds:grand_caverns/lake_lights"
   ],
   "step": "underground_decoration"
 }

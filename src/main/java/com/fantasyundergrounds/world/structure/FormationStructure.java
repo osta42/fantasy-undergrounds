@@ -105,6 +105,22 @@ public final class FormationStructure extends Structure {
             ctx.randomState().sampler()).is(Biomes.DEEP_DARK)) {
             return Optional.empty();
         }
+        if (this.kind == Kind.GIANT_CRYSTAL && random.nextFloat() < 0.4F) {
+            // Some clusters grow out of a cavern wall at mid height instead of the floor or ceiling.
+            int mid = floor + (int) ((ceiling - floor) * 0.45);
+            int start = random.nextInt(8);
+            for (int k = 0; k < 8; k++) {
+                int d = (start + k) & 7;
+                for (int step = 4; step <= 44; step += 2) {
+                    int wx = x + (int) Math.round(FormationPiece.WALL_DX[d] * step);
+                    int wz = z + (int) Math.round(FormationPiece.WALL_DZ[d] * step);
+                    if (terrain.compute(new DensityFunction.SinglePointContext(wx, mid, wz)) > 0) {
+                        FormationPiece piece = new FormationPiece(this.kind, pieceSeed, wx, mid, wz, ceiling, d);
+                        return Optional.of(new GenerationStub(new BlockPos(wx, mid, wz), builder -> builder.addPiece(piece)));
+                    }
+                }
+            }
+        }
         FormationPiece piece = new FormationPiece(this.kind, pieceSeed, x, floor, z, ceiling);
         return Optional.of(new GenerationStub(new BlockPos(x, floor, z), builder -> builder.addPiece(piece)));
     }

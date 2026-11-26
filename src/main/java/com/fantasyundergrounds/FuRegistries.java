@@ -63,6 +63,8 @@ public final class FuRegistries {
     public static final Supplier<PillarFeature> PILLAR = FEATURES.register("pillar", () -> new PillarFeature(PillarFeature.Config.CODEC));
     public static final Supplier<CrystalFeature> CRYSTAL = FEATURES.register("crystal", () -> new CrystalFeature(CrystalFeature.Config.CODEC));
     public static final Supplier<RootFeature> ROOT = FEATURES.register("root", () -> new RootFeature(RootFeature.Config.CODEC));
+    public static final Supplier<com.fantasyundergrounds.world.feature.StrataFeature> STRATA = FEATURES.register("strata",
+        () -> new com.fantasyundergrounds.world.feature.StrataFeature(net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration.CODEC));
     public static final Supplier<BlockStateProviderType<YBandsProvider>> Y_BANDS =
         STATE_PROVIDERS.register("y_bands", () -> new BlockStateProviderType<>(YBandsProvider.CODEC));
     // Ancient Depths ruins (Phase 5).

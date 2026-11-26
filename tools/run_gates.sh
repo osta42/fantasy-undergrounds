@@ -56,6 +56,9 @@ if [[ "$skip_vanilla" == false ]]; then
     run vanilla vanilla-a
     run vanilla vanilla-b "${second[@]}"
 fi
+# Ore baseline: the same deep world (floor y -128) with this mod's caves switched off.
+[[ "$skip_vanilla" == false || ! -f "$root/runs/audit-modded/fu-audit/deep-baseline.json" ]] \
+    && run modded deep-baseline --fu-disabled --no-registry-dump
 run modded "$tag-modded-a"
 run modded "$tag-modded-b" "${second[@]}"
 if [[ "$skip_pregen" == false ]]; then
@@ -73,7 +76,8 @@ echo "=== vanilla self-determinism"
     --candidate2 "$v/vanilla-b.json" --md "$reports/vanilla-self.md" > /dev/null
 echo "=== $tag main comparison"
 "$python" "$tools/compare_audit.py" "$v/vanilla-a.json" "$m/$tag-modded-a.json" \
-    --candidate2 "$m/$tag-modded-b.json" --baseline2 "$v/vanilla-b.json" --md "$reports/$tag.md"
+    --candidate2 "$m/$tag-modded-b.json" --baseline2 "$v/vanilla-b.json" \
+    --ore-baseline "$m/deep-baseline.json" --md "$reports/$tag.md"
 if [[ "$skip_pregen" == false ]]; then
     echo "=== $tag pre-generation comparison"
     "$python" "$tools/compare_audit.py" "$v/pregen-vanilla.json" "$m/$tag-pregen-modded.json" \

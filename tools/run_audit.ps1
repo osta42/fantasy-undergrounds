@@ -25,7 +25,10 @@ param(
     [int]$EstimateRadius = 0,
     [switch]$EstimateOnly,
     [switch]$OreMods,
-    [switch]$BopMods
+    [switch]$BopMods,
+    # Modded variant with the mod's caves switched off ("enabled = false"): the deep world
+    # (floor y -128) on its own, the ore baseline.
+    [switch]$FuDisabled
 )
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -69,6 +72,15 @@ if (-not $env:JAVA_HOME) {
     if ($jdk) { $env:JAVA_HOME = $jdk.FullName }
 }
 
+# Every modded run starts from the default STARTUP config (a stale file from an older build
+# would silently keep old defaults); -FuDisabled switches the mod's caves off.
+$fuConfig = Join-Path $gameDir 'config\fantasyundergrounds-startup.toml'
+Remove-Item $fuConfig -ErrorAction SilentlyContinue
+if ($FuDisabled) {
+    New-Item -ItemType Directory -Force (Join-Path $gameDir 'config') | Out-Null
+    "[general]`n`tenabled = false`n" | Set-Content -Encoding ascii $fuConfig
+}
+
 $outDir = Join-Path $gameDir 'fu-audit'
 New-Item -ItemType Directory -Force $outDir | Out-Null
 Remove-Item (Join-Path $outDir "$Label.json"), (Join-Path $outDir "$Label.log") -ErrorAction SilentlyContinue
@@ -91,7 +103,7 @@ $sw.Stop()
 
 $log = Join-Path $gameDir 'logs\latest.log'
 if (Test-Path $log) { Copy-Item $log (Join-Path $outDir "$Label.log") -Force }
-Remove-Item (Join-Path $gameDir 'fu-audit.properties') -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $gameDir 'fu-audit.properties'), $fuConfig -ErrorAction SilentlyContinue
 
 $json = Join-Path $outDir "$Label.json"
 if (Test-Path $json) {

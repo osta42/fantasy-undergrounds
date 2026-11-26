@@ -37,11 +37,11 @@ public final class ZoneField {
         Environment.UNDERGROUND_FORESTS, Environment.CRYSTAL_HOLLOWS, Environment.ROOT_SYSTEMS
     };
     // Per tier chances, order as ENVS. Deep: lava seas, abysses, crystal vaults near bedrock.
-    private static final double[] DEEP_CHANCE = {0.08, 0.06, 0.08, 0.0, 0.07, 0.0};
+    private static final double[] DEEP_CHANCE = {0.064, 0.048, 0.064, 0.0, 0.056, 0.0};
     // Mid: the great caverns, forests and root systems.
-    private static final double[] MID_CHANCE = {0.12, 0.02, 0.01, 0.07, 0.03, 0.05};
+    private static final double[] MID_CHANCE = {0.072, 0.012, 0.006, 0.042, 0.018, 0.03};
     // Upper: smaller shallow caves.
-    private static final double[] UPPER_CHANCE = {0.05, 0.02, 0.0, 0.04, 0.0, 0.04};
+    private static final double[] UPPER_CHANCE = {0.03, 0.012, 0.0, 0.024, 0.0, 0.024};
     // Mega chambers (deep through mid).
     private static final double[] MEGA_CHANCE = {0.40, 0.20, 0.25, 0.0, 0.15, 0.0};
 
@@ -63,7 +63,7 @@ public final class ZoneField {
         this.warpX = new FuNoise(seed, 0x51A7L, 2);
         this.warpZ = new FuNoise(seed, 0x51A8L, 2);
         this.cdf = new double[][] {cdf(DEEP_CHANCE, settings), cdf(MID_CHANCE, settings), cdf(UPPER_CHANCE, settings), cdf(MEGA_CHANCE, settings)};
-        this.megaShare = Math.min(0.6, 0.18 * settings.intensity());
+        this.megaShare = Math.min(0.6, 0.12 * settings.intensity());
         this.islandChance = Math.min(1.0, 0.9 * settings.frequency(Environment.FLOATING_ISLANDS));
     }
 
@@ -307,16 +307,16 @@ public final class ZoneField {
                 floor = minY + 2 + 8 * r2;
             }
             case MID -> {
-                height = 40 + Math.max(0, Math.min(32, maxH - 40)) * Math.pow(r1, 0.9);
+                height = 40 + Math.max(0, Math.min(26, maxH - 40)) * Math.pow(r1, 0.9);
                 floor = Double.isNaN(below) ? -62 + 12 * r2 : Math.max(below + 8, -62 + 12 * r2);
             }
             case 3 -> {
-                height = 80 + Math.max(0, Math.min(40, maxH + 24 - 80)) * r1;
+                height = 80 + Math.max(0, Math.min(24, maxH + 24 - 80)) * r1;
                 floor = minY + 2 + 14 * r2;
             }
             default -> {
                 height = 16 + 16 * r1;
-                floor = Double.isNaN(below) ? -4 + 10 * r2 : Math.max(below + 6, -4 + 10 * r2);
+                floor = Double.isNaN(below) ? 2 + 10 * r2 : Math.max(below + 6, 2 + 10 * r2);
             }
         }
         // Infernal chasms sit right on the lava level; forests and roots never dip into the
@@ -355,7 +355,7 @@ public final class ZoneField {
             default -> 0.04;
         };
         double radius = tier == UPPER ? 0.30 + 0.12 * r6
-            : giant ? 0.64 : (env == Environment.DROWNED_ABYSSES ? 0.46 + 0.10 * r6 : 0.40 + 0.12 * r6);
+            : giant ? 0.58 : (env == Environment.DROWNED_ABYSSES ? 0.42 + 0.10 * r6 : 0.36 + 0.12 * r6);
         int islands = 0;
         if (env == Environment.GRAND_CAVERNS && tier != UPPER && height >= 56 && this.islandChance > 0) {
             long ih = Hash.cell(this.seed, SALT_ISLANDS, cx, tier, cz);

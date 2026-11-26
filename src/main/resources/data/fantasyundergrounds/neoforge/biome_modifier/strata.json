@@ -1,0 +1,8 @@
+{
+  "type": "neoforge:add_features",
+  "biomes": "#fantasyundergrounds:overworld_cave_targets",
+  "features": [
+    "fantasyundergrounds:overhaul/strata"
+  ],
+  "step": "underground_decoration"
+}

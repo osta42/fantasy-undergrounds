@@ -49,13 +49,24 @@ public final class FormationPiece extends StructurePiece {
     private final FormationStructure.Kind kind;
     private final long seed;
     private final int x0, y0, z0, ceiling;
+    /** Giant crystals only: index into {@link #WALL_DX}/{@link #WALL_DZ} of the wall the cluster grows from, or -1. */
+    private final int wall;
+
+    /** Eight horizontal directions (the scan that found the wall); the crystal grows the opposite way. */
+    static final double[] WALL_DX = {1, 0.7071, 0, -0.7071, -1, -0.7071, 0, 0.7071};
+    static final double[] WALL_DZ = {0, 0.7071, 1, 0.7071, 0, -0.7071, -1, -0.7071};
 
     // Derived parameters (from the seed).
     private final double p1, p2, p3, p4, p5, p6;
 
     public FormationPiece(FormationStructure.Kind kind, long seed, int x, int floor, int z, int ceiling) {
-        super(FuRegistries.FORMATION_PIECE.get(), 0, box(kind, seed, x, floor, z, ceiling));
+        this(kind, seed, x, floor, z, ceiling, -1);
+    }
+
+    public FormationPiece(FormationStructure.Kind kind, long seed, int x, int floor, int z, int ceiling, int wall) {
+        super(FuRegistries.FORMATION_PIECE.get(), 0, box(kind, x, floor, z, ceiling, wall));
         this.kind = kind;
+        this.wall = wall;
         this.seed = seed;
         this.x0 = x;
         this.y0 = floor;
@@ -74,6 +85,7 @@ public final class FormationPiece extends StructurePiece {
         this.y0 = tag.getIntOr("Y", 0);
         this.z0 = tag.getIntOr("Z", 0);
         this.ceiling = tag.getIntOr("Ceil", 0);
+        this.wall = tag.getIntOr("Wall", -1);
         double[] p = params(this.seed);
         this.p1 = p[0]; this.p2 = p[1]; this.p3 = p[2]; this.p4 = p[3]; this.p5 = p[4]; this.p6 = p[5];
     }
@@ -88,14 +100,15 @@ public final class FormationPiece extends StructurePiece {
         return p;
     }
 
-    private static BoundingBox box(FormationStructure.Kind kind, long seed, int x, int floor, int z, int ceiling) {
+    private static BoundingBox box(FormationStructure.Kind kind, int x, int floor, int z, int ceiling, int wall) {
         int r = switch (kind) {
             case GIANT_MUSHROOM -> 16;
-            case GIANT_CRYSTAL -> 30;
+            case GIANT_CRYSTAL -> wall >= 0 ? 40 : 34;
             case GIANT_ROOT -> 34;
             case INFERNAL_SPIRE -> 10;
         };
-        return new BoundingBox(x - r, floor - 3, z - r, x + r, Math.max(floor + 4, ceiling + 1), z + r);
+        int below = wall >= 0 ? 18 : 3;
+        return new BoundingBox(x - r, floor - below, z - r, x + r, Math.max(floor + 4, ceiling + 1), z + r);
     }
 
     @Override
@@ -106,6 +119,7 @@ public final class FormationPiece extends StructurePiece {
         tag.putInt("Y", this.y0);
         tag.putInt("Z", this.z0);
         tag.putInt("Ceil", this.ceiling);
+        tag.putInt("Wall", this.wall);
     }
 
     @Override
@@ -204,39 +218,58 @@ public final class FormationPiece extends StructurePiece {
     // ------------------------------------------------------------ giant crystal cluster
 
     private BlockState crystal(int x, int y, int z) {
-        boolean hanging = this.p6 < 0.3;
+        // Rare, massive, angled prisms: from the floor, hanging from the ceiling, or (wall mode)
+        // jutting out of a cavern wall at mid height. Edges and tips are pearlescent froglight,
+        // so the crystals read as lit from inside; the cavern around them stays dark.
+        boolean wallMode = this.wall >= 0;
+        boolean hanging = !wallMode && this.p6 < 0.4;
         int n = 3 + (int) (this.p1 * 4);
         double ax = this.x0 + 0.5, az = this.z0 + 0.5;
-        double ay = hanging ? this.ceiling + 1.0 : this.y0 - 1.0;
-        double room = this.ceiling - this.y0;
+        double ay = wallMode ? this.y0 + 0.5 : (hanging ? this.ceiling + 1.0 : this.y0 - 1.0);
+        double room = Math.max(8.0, this.ceiling - this.y0);
+        double inward = wallMode ? Math.atan2(-WALL_DZ[this.wall], -WALL_DX[this.wall]) : 0.0;
         BlockState best = null;
         double bestScore = 0;
         for (int i = 0; i < n; i++) {
             long c = Hash.mix(this.seed, 0xC7157AL + i);
-            double tilt = Math.toRadians((i == 0 ? 5 : 15) + (i == 0 ? 10 : 35) * Hash.unit(c));
-            double yaw = 6.283 * Hash.unit(c = Hash.fmix(c));
-            double len = Math.min(room * 0.9, (i == 0 ? 18.0 : 10.0) + 16.0 * Hash.unit(c = Hash.fmix(c)));
-            double rad = (i == 0 ? 2.8 : 1.6) + 1.6 * Hash.unit(Hash.fmix(c));
-            double dx = Math.sin(tilt) * Math.cos(yaw), dz = Math.sin(tilt) * Math.sin(yaw), dy = Math.cos(tilt) * (hanging ? -1 : 1);
+            double dx, dy, dz, len;
+            double u1 = Hash.unit(c), u2 = Hash.unit(c = Hash.fmix(c)), u3 = Hash.unit(c = Hash.fmix(c));
+            double rad = (i == 0 ? 3.4 : 2.0) + 2.0 * Hash.unit(Hash.fmix(c));
+            if (wallMode) {
+                double yaw = inward + (i == 0 ? 0.25 : 0.75) * (2.0 * u1 - 1.0);
+                double pitch = Math.toRadians(-20.0 + 55.0 * u2);
+                dx = Math.cos(pitch) * Math.cos(yaw);
+                dz = Math.cos(pitch) * Math.sin(yaw);
+                dy = Math.sin(pitch);
+                len = (i == 0 ? 24.0 : 12.0) + 16.0 * u3;
+            } else {
+                double tilt = Math.toRadians((i == 0 ? 5 : 15) + (i == 0 ? 12 : 38) * u1);
+                double yaw = 6.283 * u2;
+                dx = Math.sin(tilt) * Math.cos(yaw);
+                dz = Math.sin(tilt) * Math.sin(yaw);
+                dy = Math.cos(tilt) * (hanging ? -1 : 1);
+                len = Math.min(room * 0.9, (i == 0 ? 24.0 : 12.0) + 18.0 * u3);
+            }
             // Project onto the crystal's axis.
             double px = x + 0.5 - ax, py = y + 0.5 - ay, pz = z + 0.5 - az;
             double along = px * dx + py * dy + pz * dz;
-            if (along < -1 || along > len) {
+            if (along < -2 || along > len) {
                 continue;
             }
             double qx = px - dx * along, qy = py - dy * along, qz = pz - dz * along;
             double perp = Math.sqrt(qx * qx + qy * qy + qz * qz);
             double t = along / len;
             double r = t < 0.7 ? rad : rad * (1.0 - (t - 0.7) / 0.3) + 0.3;   // prism, then a pointed tip
-            // Hexagon-ish facets.
+            // Hexagonal facets: the six edges stand out.
             double ang = Math.atan2(qz, qx);
-            r *= 0.92 + 0.08 * Math.cos(6 * ang);
+            double facet = Math.cos(6 * ang);
+            r *= 0.92 + 0.08 * facet;
             if (perp <= r) {
                 double score = r - perp + 1;
                 if (score > bestScore) {
                     bestScore = score;
-                    if (perp < rad * 0.35 && t < 0.8) {
-                        best = CRYSTAL_CORE;
+                    if (t > 0.86 || (perp > r - 1.2 && facet > 0.94 && t > 0.12) || (perp < rad * 0.35 && t < 0.8)) {
+                        best = CRYSTAL_CORE;                           // glowing edges, tip and core
                     } else if (along < 2.0) {
                         best = CALCITE;
                     } else {

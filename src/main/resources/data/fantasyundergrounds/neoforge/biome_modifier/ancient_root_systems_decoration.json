@@ -6,7 +6,8 @@
     "fantasyundergrounds:roots/floor_soil",
     "fantasyundergrounds:roots/giant_roots",
     "fantasyundergrounds:roots/hanging_roots",
-    "fantasyundergrounds:roots/glow_lichen"
+    "fantasyundergrounds:roots/glow_lichen",
+    "fantasyundergrounds:roots/glow_pockets"
   ],
   "step": "underground_decoration"
 }

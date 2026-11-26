@@ -24,6 +24,11 @@ if (-not $SkipVanilla) {
     $jobs += , @('vanilla', 'vanilla-a', @{})
     $jobs += , @('vanilla', 'vanilla-b', @{NoStructures = $true; NoRegistryDump = $true})
 }
+# Ore baseline: the same deep world (floor y -128) with this mod's caves switched off.
+$deepBaseline = Join-Path $root 'runs\audit-modded\fu-audit\deep-baseline.json'
+if (-not $SkipVanilla -or -not (Test-Path $deepBaseline)) {
+    $jobs += , @('modded', 'deep-baseline', @{FuDisabled = $true; NoRegistryDump = $true})
+}
 $jobs += , @('modded', "$Tag-modded-a", @{})
 $jobs += , @('modded', "$Tag-modded-b", @{NoStructures = $true; NoRegistryDump = $true})
 if (-not $SkipPregen) {
@@ -48,7 +53,7 @@ New-Item -ItemType Directory -Force $reports | Out-Null
 Write-Output "=== vanilla self-determinism"
 python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$v\vanilla-a.json" --candidate2 "$v\vanilla-b.json" --md "$reports\vanilla-self.md" | Out-Null
 Write-Output "=== $Tag main comparison"
-python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$m\$Tag-modded-a.json" --candidate2 "$m\$Tag-modded-b.json" --baseline2 "$v\vanilla-b.json" --md "$reports\$Tag.md"
+python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\vanilla-a.json" "$m\$Tag-modded-a.json" --candidate2 "$m\$Tag-modded-b.json" --baseline2 "$v\vanilla-b.json" --ore-baseline "$m\deep-baseline.json" --md "$reports\$Tag.md"
 if (-not $SkipPregen) {
     Write-Output "=== $Tag pre-generation comparison"
     python (Join-Path $PSScriptRoot 'compare_audit.py') "$v\pregen-vanilla.json" "$m\$Tag-pregen-modded.json" --md "$reports\$Tag-pregen.md"

@@ -1,0 +1,16 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:simple_state_provider",
+      "state": {
+        "Name": "minecraft:sea_lantern"
+      }
+    },
+    "radius": 2,
+    "depth": 1,
+    "chance": 0.45,
+    "exposure": "water",
+    "surface": "floor"
+  }
+}

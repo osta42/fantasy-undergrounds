@@ -1,0 +1,52 @@
+{
+  "type": "fantasyundergrounds:skin",
+  "config": {
+    "state": {
+      "type": "minecraft:weighted_state_provider",
+      "entries": [
+        {
+          "weight": 10,
+          "data": {
+            "Name": "minecraft:flowering_azalea_leaves",
+            "Properties": {
+              "persistent": "true",
+              "distance": "7",
+              "waterlogged": "false"
+            }
+          }
+        },
+        {
+          "weight": 6,
+          "data": {
+            "Name": "minecraft:azalea_leaves",
+            "Properties": {
+              "persistent": "true",
+              "distance": "7",
+              "waterlogged": "false"
+            }
+          }
+        },
+        {
+          "weight": 3,
+          "data": {
+            "Name": "minecraft:shroomlight"
+          }
+        },
+        {
+          "weight": 1,
+          "data": {
+            "Name": "minecraft:verdant_froglight",
+            "Properties": {
+              "axis": "y"
+            }
+          }
+        }
+      ]
+    },
+    "radius": 4,
+    "depth": 2,
+    "chance": 0.55,
+    "exposure": "air",
+    "surface": "any"
+  }
+}

@@ -97,7 +97,8 @@ public final class FluidBias implements DensityFunction {
         if (ch != null && ch.near(0.0) && ctx.blockY() >= ch.floorY() - 6 && ctx.blockY() <= ch.topY() + 4) {
             return canyonFloodedness(ctx);
         }
-        ZoneField.Slot s = this.zones.sample(ctx.blockX(), ctx.blockY(), ctx.blockZ()).slot();
+        ZoneField.Sample sample = this.zones.sample(ctx.blockX(), ctx.blockY(), ctx.blockZ());
+        ZoneField.Slot s = sample.slot();
         return switch (s.env()) {
             case DROWNED_ABYSSES -> s.submerged() ? 1.0 : lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());
             case INFERNAL_CHASMS -> lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());
@@ -111,10 +112,25 @@ public final class FluidBias implements DensityFunction {
                 int mid = Math.floorDiv(ctx.blockY(), 40) * 40 + 20;
                 yield Math.abs(caveLakeLevel(s) - mid) <= 10.0 ? lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ()) : -1.0;
             }
-            // Crystal Hollows are always dry.
-            case CRYSTAL_HOLLOWS -> -1.0;
-            default -> canyonFloodedness(ctx);
+            // Crystal Hollows and Root Systems are always dry.
+            case CRYSTAL_HOLLOWS, ROOT_SYSTEMS -> -1.0;
+            // Between the stacked chambers of a column (the shafts, the rock slabs) the vanilla
+            // water table would flood to sea level under an ocean and hang water over the open
+            // chamber below: keep that span dry too.
+            default -> inColumnSpan(sample.column(), ctx.blockY()) ? -1.0 : canyonFloodedness(ctx);
         };
+    }
+
+    private static boolean inColumnSpan(ZoneField.Column col, int y) {
+        double lo = Double.MAX_VALUE;
+        double hi = -Double.MAX_VALUE;
+        for (ZoneField.Slot s : col.slots()) {
+            if (s.isCavern()) {
+                lo = Math.min(lo, s.floorY());
+                hi = Math.max(hi, s.ceilY());
+            }
+        }
+        return y >= lo - 8 && y <= hi + 8;
     }
 
     private double canyonFloodedness(FunctionContext ctx) {

@@ -4,7 +4,9 @@
   "features": [
     "fantasyundergrounds:drowned/floor_sediment",
     "fantasyundergrounds:drowned/sea_pickles",
-    "fantasyundergrounds:drowned/glow_lichen"
+    "fantasyundergrounds:drowned/glow_lichen",
+    "fantasyundergrounds:drowned/lake_lights",
+    "fantasyundergrounds:drowned/soul_lanterns"
   ],
   "step": "underground_decoration"
 }

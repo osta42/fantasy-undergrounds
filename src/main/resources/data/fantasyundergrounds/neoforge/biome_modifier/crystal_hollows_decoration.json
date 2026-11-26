@@ -5,8 +5,7 @@
     "fantasyundergrounds:crystal/calcite_shell",
     "fantasyundergrounds:crystal/amethyst_lining",
     "fantasyundergrounds:crystal/floor_spires",
-    "fantasyundergrounds:crystal/ceiling_spires",
-    "fantasyundergrounds:crystal/glow_lichen"
+    "fantasyundergrounds:crystal/ceiling_spires"
   ],
   "step": "underground_decoration"
 }
