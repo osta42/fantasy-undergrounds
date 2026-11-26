@@ -9,20 +9,24 @@ A cave-generation overhaul for **Minecraft 26.2** on **NeoForge 26.2.0.95**. It 
 
 ## Underground environments
 
-| Environment | What it is | Frequency (per zone slot, default settings) |
+The Overworld floor is lowered to **y −128** (a built-in override of the Overworld dimension type and noise settings, plus a Mixin that moves vanilla's deep lava level down with it), and caves are planned as **monumental chambers stacked in tiers**: 40–104 blocks of open air, flat high vaults with dark ceilings, cliff terraces stepping down to a central lake or chasm, sweeping rock arches, rare thick pillars and big framing stalactites. Wide shafts drop from an upper chamber into the one below. The walls are painted in **macro rock strata** (deepslate base, tuff middle, stone/calcite upper walls, each environment with its own palette), and light comes from a few focal sources rather than scattered glow.
+
+| Environment | What it is | Where (vertical progression) |
 |---|---|---|
-| Ordinary tunnels | Winding worm tunnels linking everything | between environments |
-| Grand Caverns | Huge chambers up to ~96 blocks tall: towering pillars, broad natural bridges, rock stalactites and stalagmites, banded strata walls, glowing froglight veins and ceiling clusters, glow-berry vines; giant ones merge into caverns hundreds of blocks across | 11% deep / 8% shallow |
-| Drowned Abysses | Huge flooded caverns from the vanilla aquifer: lakes or fully submerged chambers, lit sea-pickle beds | 5% / 6% |
-| Infernal Chasms | Long rifts with lava seas, blackstone/basalt/obsidian **spires** (giant formations), crying-obsidian veins, lava falls | 6.5% / 2% |
-| Underground Forests | Dry moss-covered chambers with ponds, **giant mushrooms** with shroomlight, azalea and oak trees, cave vines, glowing fungus | 4.5% / 9% |
-| Crystal Hollows | Geode-like chambers lined with calcite and amethyst, **giant crystal clusters** with glowing cores, crystal spires with light shards | 6% / 5% |
-| Ancient Root Systems | **Giant arching roots** (wood core, mangrove-root shell, glowing sap), hanging roots, rooted-dirt ceilings | 4.5% / 6% |
-| Underground Grand Canyons | Long, meandering gorges (360–760 blocks, up to ~70 wide) with cliff levels, natural stone bridges, banded strata, a river and an arched roof | about 3 in 4 of the 1,024-block canyon cells |
-| Floating Stone Islands | Clusters of 3–8 moss-topped islands in almost every tall Grand Cavern | most tall Grand Caverns |
-| Ancient Depths ruins | Ruin complexes: a hall, crypt or stepped temple with 1–3 wings, joined by collapsed corridors or broken bridges over chasms; vanilla loot | one per 28 × 28 chunks on average |
+| Ordinary tunnels | Winding worm tunnels linking everything | everywhere between chambers |
+| Grand Caverns | Huge vaulted chambers: tiered ledges around a central lake lit by sea lanterns in the lake bed, natural bridges over the water, framing stalactites; giant ones merge into caverns hundreds of blocks across | upper, mid and deep tiers; most mega chambers |
+| Floating Stone Islands | Clusters of moss-topped islands with hanging roots and dripstone underneath, in tall Grand Caverns | tall Grand Caverns |
+| Underground Forests | Terraced moss chambers with ponds and waterfalls, **giant mushrooms** with shroomlight, azalea and oak trees, sparse long glow-berry vines | upper and mid tiers |
+| Ancient Root Systems | **Giant twisting roots** from ceiling to floor, sparse root curtains, rooted-dirt ceilings, glowing foliage pockets (flowering azalea, shroomlight, froglight) | upper and mid tiers |
+| Crystal Hollows | Dark tuff/deepslate vaults with rare, massive, angled **giant crystals** growing from the floor, the ceiling or the walls, lit from inside (froglight edges, tips and cores) | mostly deep tier and mega chambers |
+| Infernal Chasms | Long rifts dropping into wide lava seas, thick blackstone/basalt columns, obsidian crusts, **spires**, isolated lava falls | deep tier and mega chambers, near the bottom |
+| Drowned Abysses | Flooded mega-caverns from the vanilla aquifer, submerged arches, prismarine strata bands, sea lanterns and hanging soul lanterns, waterfalls from above | deep tier and mega chambers, near the bottom |
+| Underground Grand Canyons | Long, meandering gorges (360–760 blocks) with stepped cliff levels, natural stone bridges, a river and an arched roof | about 3 in 4 of the 1,024-block canyon cells |
+| Ancient Depths ruins | Ruin complexes built into chamber walls at floor level: a hall, crypt or stepped temple with 1–3 wings, collapsed corridors, broken bridges over chasms, soul lanterns; vanilla loot | one per 28 × 28 chunks on average |
 
 Giant mushrooms, crystals, roots and spires are structures (`fantasyundergrounds:giant_mushroom`, `giant_crystal`, `giant_root`, `infernal_spire`), so they can be found with `/locate structure`. Only the deep dark (`#fantasyundergrounds:keeps_own_cave_decoration`) keeps its own decoration; everywhere else this mod's decoration is added next to the cave biome's own. Screenshots: `reports/screenshots/` (no shaders, no night vision).
+
+**Environment fog (optional, client side).** With the mod installed on the client too, each environment gets its own fog colour and density (violet in Crystal Hollows, red-orange in Infernal Chasms, green in forests, teal in the abysses...). The server tells the client which environment it is in over an optional network channel; clients without the mod connect normally and keep vanilla fog. `config/fantasyundergrounds-client.toml`: `environmentFog` (true) and `fogStrength` (1.0, 0–3).
 
 ## Configuration
 
@@ -33,7 +37,7 @@ Giant mushrooms, crystals, roots and spires are structures (`fantasyundergrounds
 | general | `enabled` | true | Master switch. `false` gives vanilla caves (vanilla carvers kept). |
 | general | `dimensions` | `minecraft:overworld` | Dimensions to overhaul. |
 | general | `intensity` | 1.0 | Scales how often every environment appears (0–3). |
-| general | `minimumY` / `maximumY` | −58 / 48 | Vertical range caverns and tunnels may carve. |
+| general | `minimumY` / `maximumY` | −100 / 48 | Vertical range caverns and tunnels may carve. The layer below −100 stays solid (diamond depth). |
 | general | `removeVanillaCarvers` | true | Removes only `minecraft:cave`, `cave_extra_underground` and `canyon` from Overworld biomes. Modded carvers are never touched. |
 | general | `surfaceEntranceFrequency` | 1.0 | Surface cave entrances and sinkholes (1.0 = vanilla). |
 | shape | `cavernSizeScale` | 1.0 | Size of zones and caverns (0.5–2). |

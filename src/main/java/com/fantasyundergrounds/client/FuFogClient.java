@@ -25,15 +25,15 @@ public final class FuFogClient {
     private static final float[][] FOG = new float[Environment.values().length][];
 
     static {
-        set(Environment.GRAND_CAVERNS, 150, 0.09F, 0.10F, 0.13F);
-        set(Environment.FLOATING_ISLANDS, 170, 0.10F, 0.12F, 0.15F);
-        set(Environment.UNDERGROUND_FORESTS, 90, 0.07F, 0.13F, 0.08F);
-        set(Environment.CRYSTAL_HOLLOWS, 72, 0.15F, 0.08F, 0.21F);
-        set(Environment.INFERNAL_CHASMS, 64, 0.32F, 0.10F, 0.03F);
-        set(Environment.DROWNED_ABYSSES, 84, 0.03F, 0.12F, 0.15F);
-        set(Environment.ROOT_SYSTEMS, 76, 0.12F, 0.09F, 0.05F);
-        set(Environment.GRAND_CANYONS, 190, 0.11F, 0.11F, 0.12F);
-        set(Environment.ANCIENT_RUINS, 88, 0.04F, 0.11F, 0.13F);
+        set(Environment.GRAND_CAVERNS, 230, 0.09F, 0.10F, 0.13F);
+        set(Environment.FLOATING_ISLANDS, 250, 0.10F, 0.12F, 0.15F);
+        set(Environment.UNDERGROUND_FORESTS, 150, 0.07F, 0.13F, 0.08F);
+        set(Environment.CRYSTAL_HOLLOWS, 130, 0.15F, 0.08F, 0.21F);
+        set(Environment.INFERNAL_CHASMS, 120, 0.32F, 0.10F, 0.03F);
+        set(Environment.DROWNED_ABYSSES, 130, 0.03F, 0.12F, 0.15F);
+        set(Environment.ROOT_SYSTEMS, 130, 0.12F, 0.09F, 0.05F);
+        set(Environment.GRAND_CANYONS, 260, 0.11F, 0.11F, 0.12F);
+        set(Environment.ANCIENT_RUINS, 140, 0.04F, 0.11F, 0.13F);
     }
 
     private static void set(Environment env, float end, float r, float g, float b) {
@@ -41,7 +41,7 @@ public final class FuFogClient {
     }
 
     private static float amount;                  // 0 = vanilla, 1 = full environment fog
-    private static final float[] current = {150, 0.09F, 0.10F, 0.13F};
+    private static final float[] current = {230, 0.09F, 0.10F, 0.13F};
 
     private FuFogClient() {}
 
@@ -75,7 +75,8 @@ public final class FuFogClient {
         float far = event.getFarPlaneDistance();
         if (end < far) {
             event.setFarPlaneDistance(far + (end - far) * amount);
-            event.setNearPlaneDistance(Math.min(event.getNearPlaneDistance(), event.getFarPlaneDistance() * 0.15F));
+            // Fog starts a third of the way out: near things stay crisp, distance fades into haze.
+            event.setNearPlaneDistance(Math.min(event.getNearPlaneDistance(), event.getFarPlaneDistance() * 0.33F));
         }
     }
 

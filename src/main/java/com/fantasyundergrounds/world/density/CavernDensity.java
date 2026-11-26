@@ -37,7 +37,7 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
     private static final double WALL = 0.20;          // footprint threshold in normalised cell units
     private static final double WALL_GIANT = 0.10;    // giant chambers reach closer to the zone border
     private static final double PILLAR_CELL = 60.0;   // pillar grid spacing, blocks
-    private static final double SPIKE_CELL = 28.0;    // stalactite / stalagmite grid spacing, blocks
+    private static final double SPIKE_CELL = 36.0;    // stalactite / stalagmite grid spacing, blocks
 
     private final ZoneField zones;
     private final FuNoise wallNoise;
@@ -226,11 +226,11 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
                 long h2 = Hash.fmix(h);
                 double px = (gx + dx + 0.15 + 0.7 * Hash.unit(h2)) * SPIKE_CELL;
                 double pz = (gz + dz + 0.15 + 0.7 * Hash.unit(h2 = Hash.fmix(h2))) * SPIKE_CELL;
-                if (Math.hypot(px - cp[0], pz - cp[1]) < 0.4 * footprint && slot.env() != Environment.CRYSTAL_HOLLOWS) {
+                if (Math.hypot(px - cp[0], pz - cp[1]) < 0.4 * footprint) {
                     continue;
                 }
-                double base = 3.5 + 6.0 * Hash.unit(h2 = Hash.fmix(h2));
-                double length = Math.min(slot.height() * 0.5, 12.0 + 34.0 * Hash.unit(h2 = Hash.fmix(h2)));
+                double base = 5.0 + 7.0 * Hash.unit(h2 = Hash.fmix(h2));
+                double length = Math.min(slot.height() * 0.45, 14.0 + 34.0 * Hash.unit(h2 = Hash.fmix(h2)));
                 boolean hanging = Hash.unit(Hash.fmix(h2)) < 0.65;
                 double dist = Math.sqrt((x - px) * (x - px) + (z - pz) * (z - pz));
                 if (dist > base + 1.0) {

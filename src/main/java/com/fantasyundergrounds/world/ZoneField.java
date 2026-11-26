@@ -348,11 +348,11 @@ public final class ZoneField {
         boolean bridge = height >= 36 && s2 < bridgeOdds;
         double bridgeOffset = (r6 - 0.5) * height * 0.3;
         double spikeChance = switch (env) {
-            case GRAND_CAVERNS -> 0.20 + 0.10 * s3;
-            case CRYSTAL_HOLLOWS -> 0.22 + 0.10 * s3;
-            case INFERNAL_CHASMS, DROWNED_ABYSSES -> 0.14 + 0.08 * s3;
-            case ROOT_SYSTEMS -> 0.10;
-            default -> 0.04;
+            case GRAND_CAVERNS -> 0.14 + 0.08 * s3;
+            case CRYSTAL_HOLLOWS -> 0.10 + 0.06 * s3;
+            case INFERNAL_CHASMS, DROWNED_ABYSSES -> 0.10 + 0.06 * s3;
+            case ROOT_SYSTEMS -> 0.06;
+            default -> 0.03;
         };
         double radius = tier == UPPER ? 0.30 + 0.12 * r6
             : giant ? 0.58 : (env == Environment.DROWNED_ABYSSES ? 0.42 + 0.10 * r6 : 0.36 + 0.12 * r6);

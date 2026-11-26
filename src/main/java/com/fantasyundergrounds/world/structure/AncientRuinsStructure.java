@@ -165,6 +165,12 @@ public final class AncientRuinsStructure extends Structure {
             if (fy <= probeY - 48) {
                 return null;
             }
+            // Stay above the chamber's lake (Grand Caverns) or ponds (forests): never a flooded ruin.
+            double water = slot.env() == Environment.GRAND_CAVERNS ? slot.floorY() + 0.10 * slot.height()
+                : slot.env() == Environment.UNDERGROUND_FORESTS ? slot.floorY() + 3.0 : -1.0E9;
+            if (fy < water + 2) {
+                return null;
+            }
             int depth = Math.max(size[0], size[2]) / 2 - 3;
             return new int[] {(int) Math.round(px + c * depth), fy, (int) Math.round(pz + sn * depth)};
         }
