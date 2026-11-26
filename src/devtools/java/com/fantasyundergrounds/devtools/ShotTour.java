@@ -100,6 +100,11 @@ public final class ShotTour {
             String[] f = spec.split("\\|");
             if (f[0].equals("pos")) {
                 SHOTS.add(new Shot(f[1], d(f[2]), d(f[3]), d(f[4]), (float) d(f[5]), (float) d(f[6])));
+            } else if (f[0].equals("structure")) {
+                // structure|id|fromX|fromZ|yaws|pitch : camera inside a ruin's first room, or on a
+                // ring around a formation, facing it.
+                pendingSpec = "env|" + f[1].replace(':', '_') + "|" + f[2] + "|" + f[3] + "|" + f[4] + "|" + f[5];
+                pending = server.submit(() -> structureView(server.overworld(), f[1], d(f[2]), d(f[3])));
             } else if (f[0].equals("env")) {
                 pendingSpec = spec;
                 boolean look = f.length > 6 && f[6].equals("look");
@@ -220,6 +225,36 @@ public final class ShotTour {
             }
         }
         return best;
+    }
+
+    private static double[] structureView(ServerLevel level, String id, double x, double z) {
+        var registry = level.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.STRUCTURE);
+        var holder = registry.get(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.STRUCTURE,
+            net.minecraft.resources.Identifier.parse(id)));
+        if (holder.isEmpty()) {
+            return null;
+        }
+        var found = level.getChunkSource().getGenerator().findNearestMapStructure(level, net.minecraft.core.HolderSet.direct(holder.get()),
+            net.minecraft.core.BlockPos.containing(x, 0, z), 64, false);
+        if (found == null) {
+            return null;
+        }
+        var chunk = level.getChunk(found.getFirst().getX() >> 4, found.getFirst().getZ() >> 4,
+            net.minecraft.world.level.chunk.status.ChunkStatus.STRUCTURE_STARTS, true);
+        var start = chunk.getStartForStructure(holder.get().value());
+        if (start == null || !start.isValid() || start.getPieces().isEmpty()) {
+            return null;
+        }
+        var b = start.getPieces().get(0).getBoundingBox();
+        double cx = (b.minX() + b.maxX()) / 2.0, cz = (b.minZ() + b.maxZ()) / 2.0;
+        if (id.contains("ancient_ruins")) {
+            // Inside the central room, in a corner, looking across it.
+            double px = b.minX() + 2.5, pz = b.minZ() + 2.5, py = b.minY() + 4;
+            return new double[] {px, py, pz, Math.toDegrees(Math.atan2(-(cx - px), cz - pz))};
+        }
+        // A formation: look at it from the most open point on a ring around it.
+        double baseY = b.minY() + 3 + Math.min(14, (b.maxY() - b.minY()) / 3.0);
+        return viewpoint(level, new double[] {cx, baseY, cz}, true);
     }
 
     private static double open(DensityFunction f, double x, double y, double z) {
