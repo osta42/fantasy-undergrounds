@@ -28,7 +28,7 @@ Gate suite `tools/run_gates.sh --tag overhaul` (fresh vanilla baselines, Occulti
 
 Why the deep world is slow: profiling (Java Flight Recorder, chunk worker threads) puts vanilla's `fillFromNoise` at 30% and `SurfaceSystem.buildSurface` at 23% of the time; both scale with world height (448 vs 384 layers) and the surface rules run on every stone block below y 0. All of this mod's code together is about 6% (strata 2.6%, density functions ~2%, structures and placement filters the rest).
 
-Screenshots (no shaders, no night vision, gamma 1.0, environment fog on): `screenshots/overhaul-*.jpg`. Vertical cut through the audit region: `images/overhaul-vertical.png`.
+Screenshots of the −96 build (no shaders, no night vision, gamma 1.0, environment fog on): `screenshots/overhaul-*.jpg`. Vertical cut through the audit region: `images/overhaul-vertical.png`.
 
 ## Biomes O' Plenty (with TerraBlender, GlitchCore, Occultism, Powah)
 
