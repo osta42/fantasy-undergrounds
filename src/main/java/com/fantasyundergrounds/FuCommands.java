@@ -136,9 +136,9 @@ public final class FuCommands {
                     double[] c = zones.cellPoint(bx + dx, bz + dz);
                     double[] found;
                     if (env == Environment.FLOATING_ISLANDS) {
-                        // Island 0, approximately (its offset is in warped space; the warp is <= ~55 blocks).
+                        // An open spot a few blocks above island 0 (its offset is in warped space).
                         IslandField.Island is = IslandField.island(slot, zones.cellSize(), 0);
-                        found = new double[] {c[0] + is.ox(), is.topY() + 2, c[1] + is.oz()};
+                        found = refine(zones, terrain, Environment.GRAND_CAVERNS, c[0] + is.ox(), is.topY() + 5, c[1] + is.oz());
                     } else {
                         found = refine(zones, terrain, env, c[0], slot.centerY(), c[1]);
                     }

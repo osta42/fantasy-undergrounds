@@ -33,9 +33,10 @@ public final class IslandField {
         double r4 = Hash.unit(h = Hash.fmix(h));
         double r5 = Hash.unit(Hash.fmix(h));
         // Keep islands well inside the footprint, where the ceiling is highest.
-        double dist = (0.05 + 0.30 * r1) * slot.radius() * cell;
+        double dist = (0.05 + 0.42 * r1) * slot.radius() * cell;
         double angle = r2 * 2.0 * Math.PI + i * 2.1;
-        double radius = 9.0 + 12.0 * r3;
+        // Mixed sizes: mostly small and medium islands, a few large ones.
+        double radius = 6.0 + 15.0 * Math.pow(r3, 1.5);
         double depth = radius * (0.9 + 0.5 * r4);
         double lo = slot.floorY() + depth + 14.0;
         double hi = slot.ceilY() - 16.0;

@@ -21,14 +21,17 @@ public final class ZoneField {
     private static final long SALT_SHALLOW = 0x3C6EF372FE94F82BL;
     private static final long SALT_PARAMS = 0xA54FF53A5F1D36F1L;
     private static final long SALT_ISLANDS = 0x510E527FADE682D1L;
+    private static final long SALT_SHAPE = 0x9B05688C2B3E6C1FL;
 
     /** Default per-slot environment chances. Order matches {@link #CAVERN_ENVS}. */
     private static final Environment[] CAVERN_ENVS = {
         Environment.GRAND_CAVERNS, Environment.DROWNED_ABYSSES, Environment.INFERNAL_CHASMS,
         Environment.UNDERGROUND_FORESTS, Environment.CRYSTAL_HOLLOWS, Environment.ROOT_SYSTEMS
     };
-    private static final double[] DEEP_CHANCE = {0.065, 0.029, 0.052, 0.013, 0.021, 0.009};
-    private static final double[] SHALLOW_CHANCE = {0.042, 0.034, 0.008, 0.021, 0.017, 0.017};
+    // "Rather common" (fantasy pass): about 37% of deep slots and 36% of shallow slots hold an
+    // environment; the rest are ordinary rock with tunnels.
+    private static final double[] DEEP_CHANCE = {0.11, 0.05, 0.065, 0.045, 0.06, 0.045};
+    private static final double[] SHALLOW_CHANCE = {0.08, 0.06, 0.02, 0.09, 0.05, 0.06};
 
     private final long seed;
     private final FuSettings settings;
@@ -49,7 +52,7 @@ public final class ZoneField {
         this.warpZ = new FuNoise(seed, 0x51A8L, 2);
         this.deepCdf = cdf(DEEP_CHANCE, settings);
         this.shallowCdf = cdf(SHALLOW_CHANCE, settings);
-        this.islandChance = Math.min(1.0, 0.5 * settings.frequency(Environment.FLOATING_ISLANDS));
+        this.islandChance = Math.min(1.0, 0.9 * settings.frequency(Environment.FLOATING_ISLANDS));
     }
 
     private static double[] cdf(double[] base, FuSettings s) {
@@ -91,17 +94,18 @@ public final class ZoneField {
         double bridgeOffset,
         double radius,
         long hash,
-        int islands
+        int islands,
+        double spikeChance
     ) {
-        static final Slot EMPTY = new Slot(Environment.ORDINARY, 0, 0, false, 0, false, 0, 0, 0, 0);
+        static final Slot EMPTY = new Slot(Environment.ORDINARY, 0, 0, false, 0, false, 0, 0, 0, 0, 0);
 
         public boolean isCavern() {
             return this.env != Environment.ORDINARY;
         }
 
-        /** Drowned Abysses only: fully submerged (about 55%) rather than a lake with air above. */
+        /** Drowned Abysses only: fully submerged (about 40%) rather than a lake with air above. */
         public boolean submerged() {
-            return this.env == Environment.DROWNED_ABYSSES && (this.hash & 0xFF) < 140;
+            return this.env == Environment.DROWNED_ABYSSES && (this.hash & 0xFF) < 100;
         }
 
         /** Orientation of elongated chambers (Infernal rifts), radians. */
@@ -226,16 +230,16 @@ public final class ZoneField {
         double minH;
         double maxHEnv;
         switch (env) {
-            case GRAND_CAVERNS -> { minH = 30; maxHEnv = maxH; }
-            case INFERNAL_CHASMS -> { minH = 28; maxHEnv = Math.min(maxH, 70); }
-            case DROWNED_ABYSSES -> { minH = 22; maxHEnv = Math.min(maxH, 50); }
-            default -> { minH = 18; maxHEnv = Math.min(maxH, 40); }
+            case GRAND_CAVERNS -> { minH = 40; maxHEnv = maxH; }
+            case INFERNAL_CHASMS -> { minH = 34; maxHEnv = Math.min(maxH, 84); }
+            case DROWNED_ABYSSES -> { minH = 28; maxHEnv = Math.min(maxH, 64); }
+            default -> { minH = 26; maxHEnv = Math.min(maxH, 60); }
         }
         // Deeper = more dramatic: deep slots skew tall, shallow slots stay modest.
-        double skew = deep ? Math.pow(r1, 1.3) : Math.pow(r1, 2.0);
+        double skew = deep ? Math.pow(r1, 1.05) : Math.pow(r1, 1.6);
         double height = minH + (maxHEnv - minH) * skew;
         if (!deep) {
-            height = Math.min(height, 44);
+            height = Math.min(height, 48);
         }
         double centerY;
         double minY = this.settings.minY() + 2;
@@ -247,21 +251,45 @@ public final class ZoneField {
             centerY = 16 + 14 * (r2 - 0.5);
             centerY = Math.min(centerY, maxY - height * 0.5);
         }
-        boolean giant = env == Environment.GRAND_CAVERNS && deep && r3 < 0.35;
-        double pillarChance = env == Environment.GRAND_CAVERNS ? 0.25 + 0.35 * r4 : 0.08 * r4;
-        boolean bridge = env == Environment.GRAND_CAVERNS && height >= 36 && r5 < 0.6;
+        // Giant chambers reach the cell border, and two giant neighbours of the same environment
+        // merge into one cavern hundreds of blocks across.
+        boolean giant = deep && r3 < (env == Environment.GRAND_CAVERNS ? 0.5 : 0.28);
+        // Shape extras from a separate hash: pillars, natural bridges and rock spikes per environment.
+        long sh = Hash.cell(this.seed, SALT_SHAPE, cx, deep ? 0 : 1, cz);
+        double s1 = Hash.unit(sh), s2 = Hash.unit(sh = Hash.fmix(sh)), s3 = Hash.unit(Hash.fmix(sh));
+        double pillarChance = switch (env) {
+            case GRAND_CAVERNS -> 0.30 + 0.35 * s1;
+            case INFERNAL_CHASMS -> 0.20 + 0.20 * s1;
+            case ROOT_SYSTEMS -> 0.15 + 0.20 * s1;
+            default -> 0.05 + 0.08 * s1;
+        };
+        double bridgeOdds = switch (env) {
+            case GRAND_CAVERNS -> 0.8;
+            case DROWNED_ABYSSES, CRYSTAL_HOLLOWS, ROOT_SYSTEMS -> 0.4;
+            case INFERNAL_CHASMS -> 0.3;
+            default -> 0.0;
+        };
+        boolean bridge = height >= 36 && s2 < bridgeOdds;
         double bridgeOffset = (r6 - 0.5) * height * 0.4;
+        double spikeChance = switch (env) {
+            case GRAND_CAVERNS -> 0.40 + 0.20 * s3;
+            case CRYSTAL_HOLLOWS -> 0.45 + 0.20 * s3;
+            case INFERNAL_CHASMS, DROWNED_ABYSSES -> 0.25 + 0.15 * s3;
+            case ROOT_SYSTEMS -> 0.20;
+            default -> 0.08;
+        };
         // Footprint radius in cell units. Drowned Abysses are wider: enormous underground lakes.
-        double radius = giant ? 0.62 : (env == Environment.DROWNED_ABYSSES ? 0.40 + 0.15 * r6 : 0.30 + 0.14 * r6);
+        double radius = giant ? 0.66 : (env == Environment.DROWNED_ABYSSES ? 0.46 + 0.14 * r6 : 0.38 + 0.14 * r6);
         // Floating Stone Islands: only in tall deep Grand Caverns (>= 60 blocks), from a separate
         // hash so every other chamber parameter stays exactly as before.
         int islands = 0;
-        if (env == Environment.GRAND_CAVERNS && deep && height >= 60 && this.islandChance > 0) {
+        if (env == Environment.GRAND_CAVERNS && deep && height >= 56 && this.islandChance > 0) {
             long ih = Hash.cell(this.seed, SALT_ISLANDS, cx, 0, cz);
             if (Hash.unit(ih) < this.islandChance) {
-                islands = 1 + (int) (Hash.unit(Hash.fmix(ih)) * 3.0) + (giant ? 1 : 0);
+                // A cluster of islands of mixed sizes.
+                islands = 3 + (int) (Hash.unit(Hash.fmix(ih)) * 4.0) + (giant ? 2 : 0);
             }
         }
-        return new Slot(env, centerY, height, giant, pillarChance, bridge, bridgeOffset, radius, p, islands);
+        return new Slot(env, centerY, height, giant, pillarChance, bridge, bridgeOffset, radius, p, islands, spikeChance);
     }
 }

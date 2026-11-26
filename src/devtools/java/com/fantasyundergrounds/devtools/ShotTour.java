@@ -157,7 +157,7 @@ public final class ShotTour {
         float base = pos.length > 3 ? (float) pos[3] : 0.0F;
         for (String yaw : f[4].split(",")) {
             float y = base + Float.parseFloat(yaw);
-            SHOTS.add(new Shot(f[1] + "_" + yaw.replace('-', 'm'), pos[0], pos[1], pos[2], y, (float) d(f[5])));
+            SHOTS.add(new Shot(f[1] + "_" + specIndex + "_" + yaw.replace('-', 'm'), pos[0], pos[1], pos[2], y, (float) d(f[5])));
         }
     }
 

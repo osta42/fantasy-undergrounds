@@ -60,8 +60,9 @@ public final class TunnelDensity implements DensityFunction.SimpleFunction {
         // Regional masks. Main tunnels cover most of the world ("very common"); the thin maze
         // system clusters in patches, leaving large stretches of solid rock between them.
         double fb = 0.25 * (this.frequency - 1.0);
-        double mainCoverage = clamp01((this.mainMask.sample2d(x / 400.0, z / 400.0) + 0.55 + fb) * 3.0);
-        double mazeCoverage = clamp01((this.mask.sample2d(x / 280.0, z / 280.0) + 0.05 + fb) * 3.0);
+        // Environments are common now (fantasy pass), so ordinary tunnels cover less of the world.
+        double mainCoverage = clamp01((this.mainMask.sample2d(x / 400.0, z / 400.0) + 0.38 + fb) * 3.0);
+        double mazeCoverage = clamp01((this.mask.sample2d(x / 280.0, z / 280.0) - 0.08 + fb) * 3.0);
         if (mainCoverage <= 0 && mazeCoverage <= 0) {
             return 1.0;
         }

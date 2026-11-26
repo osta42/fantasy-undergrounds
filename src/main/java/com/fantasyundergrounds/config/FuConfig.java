@@ -71,7 +71,7 @@ public final class FuConfig {
         CAVERN_SIZE = b.comment("Scale of the environment zones and the caverns inside them (1.0 = ~190-block zones).")
             .defineInRange("cavernSizeScale", 1.0, 0.5, 2.0);
         MAX_CAVERN_HEIGHT = b.comment("Maximum cavern height in blocks.")
-            .defineInRange("maxCavernHeight", 80, 16, 120);
+            .defineInRange("maxCavernHeight", 96, 16, 120);
         TUNNEL_FREQUENCY = b.comment("Frequency of ordinary tunnel networks. 0 disables them.")
             .defineInRange("tunnelFrequency", 1.0, 0.0, 3.0);
         TUNNEL_WIDTH = b.comment("Width multiplier for ordinary tunnels.")

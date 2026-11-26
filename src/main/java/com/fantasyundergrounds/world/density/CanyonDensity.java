@@ -50,6 +50,8 @@ public final class CanyonDensity implements DensityFunction.SimpleFunction {
         double vertical = Math.max(h.floorY() - y, y - h.topY()) / 6.0;
         d = Math.max(d, vertical);
         d += 0.22 * this.detail.sample(x / 15.0, y / 11.0, z / 15.0);
+        // Natural stone bridges spanning the canyon.
+        d = Math.max(d, this.field.bridge(h, y));
         d = Math.max(d, Math.max((this.minY - y) / 4.0, (y - this.maxY) / 4.0));
         return Math.max(-1.0, Math.min(1.0, d));
     }

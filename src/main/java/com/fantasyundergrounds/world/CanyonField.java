@@ -35,7 +35,7 @@ public final class CanyonField {
         this.seed = seed;
         this.scale = settings.cavernSize();
         this.cell = 1024.0 * this.scale;
-        this.chance = Math.min(1.0, 0.30 * settings.intensity() * settings.frequency(Environment.GRAND_CANYONS));
+        this.chance = Math.min(1.0, 0.75 * settings.intensity() * settings.frequency(Environment.GRAND_CANYONS));
         this.maxY = settings.maxY();
         this.meander = new FuNoise(seed, 0xCA1L, 3);
         this.floorNoise = new FuNoise(seed, 0xCA2L, 2);
@@ -135,8 +135,8 @@ public final class CanyonField {
         // Floor -31..-21 (+/-2 noise): the river at floor+3 stays inside the aquifer's reachable
         // -30..-10 band for the y -40..0 fluid cells.
         double floorY = -31.0 + 10.0 * r5;
-        double height = 48.0 + 22.0 * r6;
-        double maxHalfWidth = (14.0 + 12.0 * r7) * this.scale;
+        double height = 56.0 + 24.0 * r6;
+        double maxHalfWidth = (20.0 + 16.0 * r7) * this.scale;
         double river = 3.0 + 2.0 * r8;
         int levels = (p & 0x100) == 0 ? 2 : 3;
         return new Canyon(gx, gz, cx, cz, Math.cos(angle), Math.sin(angle), halfLength, floorY, height, maxHalfWidth, river, levels, p);
@@ -182,6 +182,30 @@ public final class CanyonField {
                 bestOut = out;
                 best = new Hit(c, u, dv, taper, floorY, topY);
             }
+        }
+        return best;
+    }
+
+    /**
+     * Natural stone bridges across a canyon: 1-3 per canyon at fixed positions along its axis.
+     * Returns a density contribution (positive = rock) for the bridge nearest to {@code h.u()}.
+     */
+    public double bridge(Hit h, double y) {
+        Canyon c = h.canyon();
+        int count = 1 + (int) ((c.hash() >>> 40 & 0xFF) / 256.0 * 3.0);
+        double best = -1.0;
+        for (int i = 0; i < count; i++) {
+            long b = Hash.mix(c.hash(), 0xB21D6E00L + i);
+            double u0 = (Hash.unit(b) * 1.4 - 0.7) * c.halfLength();
+            double halfSpan = 3.0 + 3.0 * Hash.unit(b = Hash.fmix(b));            // along the canyon
+            double deck = h.floorY() + (0.45 + 0.3 * Hash.unit(Hash.fmix(b))) * (h.topY() - h.floorY());
+            double du = Math.abs(h.u() - u0);
+            // Arched ends: the bridge thickens towards the walls; it sags slightly in the middle.
+            double across = Math.min(1.0, Math.abs(h.dv()) / Math.max(1.0, h.halfWidth(deck)));
+            double top = deck + 2.0 - 1.5 * (1.0 - across);
+            double bottom = deck - 2.5 - 8.0 * across * across;
+            double v = Math.min((halfSpan - du) / 2.0, Math.min(top - y, y - bottom) / 3.0);
+            best = Math.max(best, v);
         }
         return best;
     }

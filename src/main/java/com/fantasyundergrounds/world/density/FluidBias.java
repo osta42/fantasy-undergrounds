@@ -95,6 +95,13 @@ public final class FluidBias implements DensityFunction {
         return switch (s.env()) {
             case DROWNED_ABYSSES -> s.submerged() ? 1.0 : lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());
             case INFERNAL_CHASMS -> lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ());
+            // Forests stay dry apart from shallow ponds in the hollows of the floor.
+            case UNDERGROUND_FORESTS -> {
+                int mid = Math.floorDiv(ctx.blockY(), 40) * 40 + 20;
+                yield Math.abs(pondLevel(s) - mid) <= 10.0 ? lakeValue(ctx.blockX(), ctx.blockY(), ctx.blockZ()) : -1.0;
+            }
+            // Crystal Hollows are always dry.
+            case CRYSTAL_HOLLOWS -> -1.0;
             default -> canyonFloodedness(ctx);
         };
     }
@@ -121,16 +128,24 @@ public final class FluidBias implements DensityFunction {
             }
             return this.original.compute(ctx);
         }
-        double target = s.env() == Environment.DROWNED_ABYSSES
-            ? s.floorY() + 0.45 * s.height()
-            : s.floorY() + 0.22 * s.height();
+        double target = switch (s.env()) {
+            case DROWNED_ABYSSES -> s.floorY() + 0.45 * s.height();
+            case UNDERGROUND_FORESTS -> pondLevel(s);
+            default -> s.floorY() + 0.16 * s.height();
+        };
         return Math.max(-1.0, Math.min(1.0, (target - mid) / 10.0));
+    }
+
+    /** Forest ponds: a little above the chamber's nominal floor, so only the floor's hollows fill. */
+    private static double pondLevel(ZoneField.Slot s) {
+        return s.floorY() + 3.0;
     }
 
     private ZoneField.Slot lakeSlot(int x, int mid, int z) {
         for (int dy : new int[] {0, -15, 15}) {
             ZoneField.Slot s = this.zones.sample(x, mid + dy, z).slot();
-            if ((s.env() == Environment.DROWNED_ABYSSES && !s.submerged()) || s.env() == Environment.INFERNAL_CHASMS) {
+            if ((s.env() == Environment.DROWNED_ABYSSES && !s.submerged()) || s.env() == Environment.INFERNAL_CHASMS
+                || s.env() == Environment.UNDERGROUND_FORESTS) {
                 return s;
             }
         }

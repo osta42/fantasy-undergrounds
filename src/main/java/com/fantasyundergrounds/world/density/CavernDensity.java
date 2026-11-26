@@ -24,7 +24,8 @@ import net.minecraft.world.level.levelgen.DensityFunction;
  *       floors terraced into shelves for multiple levels</li>
  *   <li>detail: warped 3D fBm for irregular walls and ceilings</li>
  *   <li>pillars: sparse 2D cellular columns, hourglass-shaped (wider at floor and ceiling)</li>
- *   <li>bridges: ridged-noise paths of rock crossing tall Grand Caverns</li>
+ *   <li>bridges: broad ridged-noise spans of rock with arched undersides</li>
+ *   <li>spikes: rock stalactites and stalagmites (tapered cones following the local ceiling and floor)</li>
  *   <li>floating islands: rock blobs in the tallest Grand Caverns ({@link IslandField})</li>
  * </ul>
  */
@@ -36,7 +37,8 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
 
     private static final double WALL = 0.22;          // footprint threshold in normalised cell units
     private static final double WALL_GIANT = 0.12;    // giant chambers reach closer to the zone border
-    private static final double PILLAR_CELL = 40.0;   // pillar grid spacing, blocks
+    private static final double PILLAR_CELL = 44.0;   // pillar grid spacing, blocks
+    private static final double SPIKE_CELL = 18.0;    // stalactite / stalagmite grid spacing, blocks
 
     private final ZoneField zones;
     private final FuNoise wallNoise;
@@ -130,6 +132,10 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
         double wz = z + 14.0 * this.detailWarp.sample(z / 40.0 + 31.7, y / 40.0, x / 40.0);
         d += (slot.env() == Environment.CRYSTAL_HOLLOWS ? 0.55 : 0.38) * this.detail.sample(wx / 26.0, y / 18.0, wz / 26.0);
 
+        // Rock stalactites and stalagmites, hanging from / rising off this column's ceiling and floor.
+        if (slot.spikeChance() > 0) {
+            d = Math.max(d, spikes(x, y, z, slot, floorY, ceilY));
+        }
         // Giant pillars (rock re-added inside the chamber).
         if (slot.pillarChance() > 0) {
             d = Math.max(d, pillar(x, y, z, slot));
@@ -163,7 +169,7 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
                 long h2 = Hash.fmix(h);
                 double px = (gx + dx + 0.2 + 0.6 * Hash.unit(h2)) * PILLAR_CELL;
                 double pz = (gz + dz + 0.2 + 0.6 * Hash.unit(Hash.fmix(h2))) * PILLAR_CELL;
-                double r = 3.0 + 6.0 * Hash.unit(Hash.fmix(h2 + 7));
+                double r = 4.0 + 8.0 * Hash.unit(Hash.fmix(h2 + 7));
                 double dist = Math.sqrt((x - px) * (x - px) + (z - pz) * (z - pz)) - r;
                 if (dist < best) {
                     best = dist;
@@ -181,11 +187,51 @@ public final class CavernDensity implements DensityFunction.SimpleFunction {
     }
 
     private double bridge(int x, int y, int z, ZoneField.Slot slot) {
-        double path = Math.abs(this.bridgePath.sample2d(x / 110.0, z / 110.0));
-        double halfWidthBlocks = (0.045 - path) * 110.0;   // ~3-5 blocks either side of the path
-        double by = slot.centerY() + slot.bridgeOffset() + 4.0 * this.bridgePath.sample2d(x / 37.0 + 50, z / 37.0);
-        double thick = 3.0 - Math.abs(y - by);
+        double path = Math.abs(this.bridgePath.sample2d(x / 130.0, z / 130.0));
+        double halfWidthBlocks = (0.05 - path) * 130.0;   // up to ~6.5 blocks either side of the path
+        if (halfWidthBlocks < -6) {
+            return -1.0;
+        }
+        double by = slot.centerY() + slot.bridgeOffset() + 5.0 * this.bridgePath.sample2d(x / 45.0 + 50, z / 45.0);
+        // Flat deck on top, arched underside: thickest at the edges of the span's path.
+        double centrality = clamp01(halfWidthBlocks / 6.5);
+        double top = by + 2.5;
+        double bottom = by - 2.0 - 4.0 * (1.0 - centrality);
+        double thick = Math.min(top - y, y - bottom);
         return Math.min(halfWidthBlocks / 2.0, thick / 2.0);
+    }
+
+    /** Tapered rock cones: stalactites from this column's ceiling, stalagmites from its floor. */
+    private double spikes(int x, int y, int z, ZoneField.Slot slot, double floorY, double ceilY) {
+        int gx = (int) Math.floor(x / SPIKE_CELL);
+        int gz = (int) Math.floor(z / SPIKE_CELL);
+        double best = -1.0;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                long h = Hash.cell(slot.hash(), 0x5719EL, gx + dx, 0, gz + dz);
+                if (Hash.unit(h) >= slot.spikeChance()) {
+                    continue;
+                }
+                long h2 = Hash.fmix(h);
+                double px = (gx + dx + 0.15 + 0.7 * Hash.unit(h2)) * SPIKE_CELL;
+                double pz = (gz + dz + 0.15 + 0.7 * Hash.unit(h2 = Hash.fmix(h2))) * SPIKE_CELL;
+                double base = 2.0 + 4.5 * Hash.unit(h2 = Hash.fmix(h2));
+                double length = Math.min(slot.height() * 0.45, 8.0 + 24.0 * Hash.unit(h2 = Hash.fmix(h2)));
+                boolean hanging = Hash.unit(Hash.fmix(h2)) < 0.6;
+                double dist = Math.sqrt((x - px) * (x - px) + (z - pz) * (z - pz));
+                if (dist > base + 1.0) {
+                    continue;
+                }
+                // 0 at the tip, 1 at the attachment; radius grows towards the attachment.
+                double t = hanging ? (y - (ceilY - length)) / length : ((floorY + length) - y) / length;
+                if (t <= 0) {
+                    continue;
+                }
+                double r = base * Math.pow(Math.min(t, 1.0), 0.8);
+                best = Math.max(best, (r - dist) / 2.0);
+            }
+        }
+        return best;
     }
 
     private static double clamp01(double v) {
