@@ -89,7 +89,7 @@ public final class FuConfig {
         FLOATING_ISLANDS = env(b, "floatingIslands", "Floating Stone Islands, only in the tallest Grand Caverns (extremely rare).");
         ANCIENT_RUINS = env(b, "ancientRuins", "Ancient Depths ruins (very rare).");
         RUIN_SPACING = b.comment("Average spacing of Ancient Depths ruins, in chunks.")
-            .defineInRange("ancientRuinSpacing", 64, 16, 512);
+            .defineInRange("ancientRuinSpacing", 28, 12, 512);
         b.pop();
 
         b.comment("Placed springs and falls. Large lakes and lava seas come from the aquifer and are not capped here.").push("fluids");

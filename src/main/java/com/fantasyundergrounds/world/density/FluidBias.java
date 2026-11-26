@@ -168,7 +168,8 @@ public final class FluidBias implements DensityFunction {
             if (env == Environment.INFERNAL_CHASMS) {
                 return 1.0;
             }
-            drowned |= env == Environment.DROWNED_ABYSSES;
+            // Drowned lakes and forest ponds are always water, never aquifer lava.
+            drowned |= env == Environment.DROWNED_ABYSSES || env == Environment.UNDERGROUND_FORESTS;
         }
         if (drowned) {
             return 0.0;

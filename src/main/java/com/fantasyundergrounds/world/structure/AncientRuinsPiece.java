@@ -31,7 +31,10 @@ import net.minecraft.world.level.storage.loot.LootTable;
  *   <li>colonnade hall: tiled floor, two rows of 3x3 columns (some fallen), architraves, a dais with a chest</li>
  *   <li>sunken crypt: crumbling walls with doorways, sarcophagi, a partly fallen ceiling, hanging lanterns</li>
  *   <li>stepped temple: a ruined ziggurat with a hidden chamber, a tunnel to it and lanterns on the plaza</li>
+ *   <li>collapsed corridor (any length): walls, arches, a partly fallen roof, rubble, hanging lanterns</li>
+ *   <li>broken bridge (any length): a deck with gaps on piers over a carved chasm, crumbling parapets</li>
  * </ol>
+ * Layouts 0-2 are rooms; 3 and 4 connect the rooms of a ruin complex ({@link AncientRuinsStructure}).
  *
  * <p>Vanilla blocks only. Every decision is a hash of (piece seed, local position), never a
  * sequential random draw, so the result does not depend on the order in which chunks are
@@ -42,6 +45,10 @@ import net.minecraft.world.level.storage.loot.LootTable;
  */
 public final class AncientRuinsPiece extends StructurePiece {
     public static final int VARIANTS = 3;
+    public static final int CORRIDOR = 3;
+    public static final int BRIDGE = 4;
+    /** Depth of the chasm under a bridge deck. */
+    public static final int CHASM = 12;
     private static final int[][] SIZES = {{31, 14, 23}, {21, 9, 21}, {23, 13, 23}};
 
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
@@ -77,7 +84,11 @@ public final class AncientRuinsPiece extends StructurePiece {
 
     /** {width (x), height (y), length (z)} of a layout. */
     public static int[] size(int variant) {
-        return SIZES[Math.floorMod(variant, VARIANTS)].clone();
+        return switch (variant) {
+            case CORRIDOR -> new int[] {16, 8, 7};
+            case BRIDGE -> new int[] {16, 8 + CHASM, 9};
+            default -> SIZES[Math.floorMod(variant, VARIANTS)].clone();
+        };
     }
 
     /** Dev self-test: block census of one layout, straight from the layout functions (no level). */
@@ -91,6 +102,8 @@ public final class AncientRuinsPiece extends StructurePiece {
                     BlockState st = switch (p.variant) {
                         case 1 -> p.crypt(x, y, z, sz[0], sz[1], sz[2]);
                         case 2 -> p.temple(x, y, z, sz[0], sz[1], sz[2]);
+                        case CORRIDOR -> p.corridor(x, y, z, sz[0], sz[1], sz[2]);
+                        case BRIDGE -> p.bridge(x, y, z, sz[0], sz[1], sz[2]);
                         default -> p.hall(x, y, z, sz[0], sz[1], sz[2]);
                     };
                     if (st != null && !st.isAir()) {
@@ -133,6 +146,8 @@ public final class AncientRuinsPiece extends StructurePiece {
                     BlockState s = switch (this.variant) {
                         case 1 -> crypt(lx, ly, lz, w, h, l);
                         case 2 -> temple(lx, ly, lz, w, h, l);
+                        case CORRIDOR -> corridor(lx, ly, lz, w, h, l);
+                        case BRIDGE -> bridge(lx, ly, lz, w, h, l);
                         default -> hall(lx, ly, lz, w, h, l);
                     };
                     if (s != null) {
@@ -143,6 +158,7 @@ public final class AncientRuinsPiece extends StructurePiece {
         }
         // Loot: vanilla tables only.
         switch (this.variant) {
+            case CORRIDOR, BRIDGE -> { }
             case 1 -> {
                 chest(level, chunkBB, random, w / 2, 1, l / 2, BuiltInLootTables.STRONGHOLD_CORRIDOR);
                 chest(level, chunkBB, random, 2, 1, 2, BuiltInLootTables.SIMPLE_DUNGEON);
@@ -243,6 +259,72 @@ public final class AncientRuinsPiece extends StructurePiece {
         }
         if (ly >= h - 4 && r(lx, ly, lz, 0xE1L) < 0.012) {
             return COBWEB;
+        }
+        return ly < h - 1 ? AIR : null;
+    }
+
+    // ---------------------------------------------------------------- collapsed corridor
+
+    private BlockState corridor(int lx, int ly, int lz, int w, int h, int l) {
+        // Runs along the longer horizontal axis; a = along, b = across, wb = width across.
+        boolean alongX = w >= l;
+        int a = alongX ? lx : lz, b = alongX ? lz : lx, wb = alongX ? l : w;
+        boolean side = b == 0 || b == wb - 1;
+        boolean collapsed = r(a / 4, 0, 0, 0xF2L) < 0.25;     // 4-block segments that fell in
+        if (ly == 0) {
+            return side ? POLISHED : floorTile(lx, ly, lz);
+        }
+        if (collapsed) {
+            // Rubble mound, open to the rock above.
+            if (ly <= 2 && r(lx, ly, lz, 0xF3L) < 0.55 - 0.2 * ly) {
+                return r(lx, ly, lz, 0xF4L) < 0.5 ? COBBLED : CRACKED_BRICKS;
+            }
+            return ly < h - 1 ? AIR : null;
+        }
+        boolean arch = a % 6 == 0;
+        if (side && ly <= h - 2) {
+            return arch ? POLISHED : (r(lx, ly, lz, 0xF5L) < 0.85 ? brick(lx, ly, lz) : AIR);
+        }
+        if (ly == h - 2 && arch) {
+            return brick(lx, ly, lz);                          // lintel of the arch
+        }
+        if (ly == h - 1) {
+            return r(a / 2, 0, b / 2, 0xF6L) < 0.6 ? TILES : AIR;
+        }
+        if (ly == h - 3 && a % 8 == 4 && b == wb / 2) {
+            return HANGING_LANTERN;
+        }
+        if (ly == 1 && r(lx, ly, lz, 0xF7L) < 0.04) {
+            return COBBLED;
+        }
+        if (ly >= h - 3 && side && r(lx, ly, lz, 0xF8L) < 0.05) {
+            return COBWEB;
+        }
+        return AIR;
+    }
+
+    // ---------------------------------------------------------------- broken bridge
+
+    private BlockState bridge(int lx, int ly, int lz, int w, int h, int l) {
+        boolean alongX = w >= l;
+        int a = alongX ? lx : lz, b = alongX ? lz : lx, la = alongX ? w : l, wb = alongX ? l : w;
+        int deck = CHASM;                                      // deck level, above the chasm
+        boolean pier = (a < 2 || a >= la - 2 || a % 8 == 0) && b >= 2 && b <= wb - 3;
+        boolean gap = r(a / 3, 0, 0, 0xB2L) < 0.22 && a > 3 && a < la - 4;   // fallen spans
+        if (ly < deck) {
+            return pier && !gap ? (ly % 4 == 0 ? POLISHED : brick(lx, ly, lz)) : AIR;   // piers, open chasm
+        }
+        if (ly == deck) {
+            if (gap) {
+                return AIR;
+            }
+            return b == 0 || b == wb - 1 ? POLISHED : floorTile(lx, ly, lz);
+        }
+        if (ly == deck + 1 && (b == 0 || b == wb - 1) && !gap && r(lx, ly, lz, 0xB3L) < 0.7) {
+            return BRICK_SLAB;                                // crumbling parapet
+        }
+        if (ly == deck + 1 && b == 0 && a % 8 == 4 && !gap) {
+            return LANTERN;
         }
         return ly < h - 1 ? AIR : null;
     }

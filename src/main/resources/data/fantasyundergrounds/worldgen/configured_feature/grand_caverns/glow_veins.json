@@ -24,9 +24,9 @@
         }
       ]
     },
-    "radius": 3,
+    "radius": 4,
     "depth": 1,
-    "chance": 0.3,
+    "chance": 0.45,
     "exposure": "air",
     "surface": "any"
   }

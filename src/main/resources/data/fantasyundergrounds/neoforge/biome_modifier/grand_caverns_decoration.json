@@ -6,7 +6,8 @@
     "fantasyundergrounds:grand_caverns/glow_veins",
     "fantasyundergrounds:grand_caverns/stalactites",
     "fantasyundergrounds:grand_caverns/glow_lichen",
-    "fantasyundergrounds:grand_caverns/hanging_roots"
+    "fantasyundergrounds:grand_caverns/hanging_roots",
+    "fantasyundergrounds:grand_caverns/ceiling_glow"
   ],
   "step": "underground_decoration"
 }

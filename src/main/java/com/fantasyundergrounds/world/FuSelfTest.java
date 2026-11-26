@@ -58,7 +58,7 @@ public final class FuSelfTest {
         // Ancient Depths ruin layouts (Phase 5): census per layout, and the same twice.
         Map<String, Object> ruins = new LinkedHashMap<>();
         boolean ruinsDeterministic = true;
-        for (int v = 0; v < com.fantasyundergrounds.world.structure.AncientRuinsPiece.VARIANTS; v++) {
+        for (int v = 0; v <= com.fantasyundergrounds.world.structure.AncientRuinsPiece.BRIDGE; v++) {
             Map<String, Integer> a = com.fantasyundergrounds.world.structure.AncientRuinsPiece.census(v, seed + v);
             ruinsDeterministic &= a.equals(com.fantasyundergrounds.world.structure.AncientRuinsPiece.census(v, seed + v));
             ruins.put("layout" + v, a);
